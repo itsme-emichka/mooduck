@@ -33,6 +33,7 @@ class Moodboard(Model):
     cover = fields.CharField(max_length=1024, null=True)
     is_private = fields.BooleanField(default=False)
     is_chaotic = fields.BooleanField(default=False)
+    created_at = fields.DatetimeField(auto_now_add=True)
 
 
 class FavMoodboard(Model):
@@ -69,17 +70,5 @@ class Item(Model):
         validators=[ChoicesValidator(MOODBOARD_TYPES.keys())]
     )
     link = fields.CharField(max_length=1024, null=True)
+    media = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
-
-
-class ItemMedia(Model):
-    id = fields.BigIntField(pk=True)
-    item = fields.ForeignKeyField(
-        'models.Item',
-        related_name='images'
-    )
-    media_type = fields.CharField(
-        max_length=64,
-        validators=[ChoicesValidator(MEDIA_TYPES)]
-    )
-    media_url = fields.CharField(max_length=512)

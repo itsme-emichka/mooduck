@@ -3,7 +3,7 @@ from typing import Annotated
 from pydantic import BaseModel, EmailStr
 from fastapi import Query
 
-from config import SLUG_PATTERN, EMAIL_PATTERN
+from config import SLUG_PATTERN
 
 
 class UserGet(BaseModel):
@@ -13,9 +13,12 @@ class UserGet(BaseModel):
     name: str | None = None
     role: str = 'user'
 
+    class Config:
+        from_attributes = True
+
 
 class UserCreate(BaseModel):
     username: Annotated[str, Query(pattern=SLUG_PATTERN)]
-    email: Annotated[str, Query(pattern=EMAIL_PATTERN)]
+    email: EmailStr
     password: str
     name: str | None = None
