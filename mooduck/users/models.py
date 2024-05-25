@@ -30,6 +30,7 @@ class User(Model):
         validators=[RegexValidator(ROLE_CHOICES_PATTERN, re.A)],
         default='user',
     )
+    bio = fields.TextField(null=True)
 
     def __str__(self) -> str:
         return self.username
