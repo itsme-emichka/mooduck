@@ -28,14 +28,9 @@ CREATE TABLE IF NOT EXISTS "item" (
     "description" TEXT,
     "item_type" VARCHAR(128) NOT NULL,
     "link" VARCHAR(1024),
+    "media" TEXT,
     "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "author_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
-);
-CREATE TABLE IF NOT EXISTS "itemmedia" (
-    "id" BIGSERIAL NOT NULL PRIMARY KEY,
-    "media_type" VARCHAR(64) NOT NULL,
-    "media_url" VARCHAR(512) NOT NULL,
-    "item_id" BIGINT NOT NULL REFERENCES "item" ("id") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "moodboard" (
     "id" BIGSERIAL NOT NULL PRIMARY KEY,
@@ -44,6 +39,7 @@ CREATE TABLE IF NOT EXISTS "moodboard" (
     "cover" VARCHAR(1024),
     "is_private" BOOL NOT NULL  DEFAULT False,
     "is_chaotic" BOOL NOT NULL  DEFAULT False,
+    "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "author_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "favmoodboard" (

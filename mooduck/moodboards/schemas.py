@@ -34,6 +34,11 @@ class CreateMoodboard(BaseModel):
     items: list[CreateItem] | None = None
 
 
+class AddItemsToMoodboard(BaseModel):
+    items: list[CreateItem] | None = None
+    existing_items: list[int] | None = None
+
+
 # GET
 class GetItem(BaseModel):
     id: int

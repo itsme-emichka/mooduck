@@ -1,19 +1,23 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from users.models import User
 from moodboards.models import Moodboard
 from moodboards.schemas import (
     CreateMoodboard,
     GetMoodboard,
-    ListMoodboard
+    ListMoodboard,
+    AddItemsToMoodboard
 )
 from moodboards.services import (
     bulk_create_items,
-    get_moodboard as get_moodboard_db,
+    get_moodboard_with_items as get_moodboard_with_items_db,
     add_existing_items_to_moodboard,
-    get_all_moodboards
+    get_all_moodboards,
+    get_moodboard,
+    get_moodboard_items,
+    get_chaotic
 )
 from moodboards.utils import get_moodboard_response
 from extra.dependencies import is_authenticated
@@ -50,10 +54,84 @@ async def create_moodboard(
 
 @router.get('/moodboard/{id}')
 async def retrieve_moodboard(id: int) -> GetMoodboard:
-    moodboard, items = await get_moodboard_db(id)
+    moodboard, items = await get_moodboard_with_items_db(id)
     return get_moodboard_response(moodboard, items, moodboard.author)
+
+
+@router.post('/moodboard/{id}')
+async def add_items_to_moodboard(
+    id: int,
+    user: Annotated[User, Depends(is_authenticated)],
+    data: AddItemsToMoodboard
+) -> GetMoodboard:
+    moodboard = await get_moodboard(id)
+    if not user == moodboard.author:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Не ваш мудборд'
+        )
+    items = []
+    if data.items:
+        items = await bulk_create_items(user, moodboard, data.items)
+    if data.existing_items:
+        items.extend(
+            await add_existing_items_to_moodboard(
+                data.existing_items,
+                moodboard
+            )
+        )
+    if not items:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Пустой запрос или такие айтемы уже на мудборде'
+        )
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        moodboard.author
+    )
 
 
 @router.get('/moodboard')
 async def list_moodboard() -> list[ListMoodboard]:
     return await get_all_moodboards()
+
+
+@router.get('/chaotic')
+async def retrive_chaotic(
+    user: Annotated[User, Depends(is_authenticated)]
+) -> GetMoodboard:
+    moodboard = await get_chaotic(user)
+    return get_moodboard_response(
+        moodboard=moodboard,
+        items=await get_moodboard_items(moodboard),
+        author=moodboard.author
+    )
+
+
+@router.post('/chaotic')
+async def add_items_to_chaotic(
+    user: Annotated[User, Depends(is_authenticated)],
+    data: AddItemsToMoodboard
+) -> GetMoodboard:
+    moodboard = await get_chaotic(user)
+    items = []
+    if data.items:
+        items = await bulk_create_items(user, moodboard, data.items)
+    if data.existing_items:
+        items.extend(
+            await add_existing_items_to_moodboard(
+                data.existing_items,
+                moodboard
+            )
+        )
+    if not items:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Пустой запрос или такие айтемы уже на мудборде'
+        )
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        moodboard.author
+    )

@@ -13,7 +13,18 @@ async def add_existing_items_to_moodboard(
     id_list: list[int],
     moodboard: Moodboard
 ) -> list[GetItem]:
-    items = items = await Item.filter(id__in=id_list).select_related('author')
+    moodboard_items_ids = await Item.all(
+    ).select_related(
+        'item_moodboard'
+    ).filter(
+        item_moodboard__moodboard=moodboard
+    ).values_list('id', flat=True)
+    diff = set(id_list).difference(set(moodboard_items_ids))
+    if not diff:
+        return []
+
+    items = await Item.filter(id__in=diff).select_related('author')
+
     await ItemMoodboard.bulk_create(
         [ItemMoodboard(
             item=item, moodboard=moodboard
@@ -32,7 +43,7 @@ async def add_existing_items_to_moodboard(
     ]
 
 
-async def get_moodboard(id: int) -> list[Moodboard, list[GetItem]]:
+async def get_moodboard(id: int) -> Moodboard:
     moodboard = await Moodboard.all(
     ).select_related(
         'author'
@@ -40,7 +51,21 @@ async def get_moodboard(id: int) -> list[Moodboard, list[GetItem]]:
 
     if not moodboard:
         raise HTTPException(status_code=404)
+    return moodboard
 
+
+async def get_chaotic(user: User) -> Moodboard:
+    moodboard = await Moodboard.all(
+    ).select_related(
+        'author'
+    ).get_or_none(author=user, is_chaotic=True)
+
+    if not moodboard:
+        raise HTTPException(status_code=404)
+    return moodboard
+
+
+async def get_moodboard_items(moodboard: Moodboard) -> list[GetItem]:
     items = await Item.all(
     ).select_related(
         'item_moodboard'
@@ -50,7 +75,7 @@ async def get_moodboard(id: int) -> list[Moodboard, list[GetItem]]:
         item_moodboard__moodboard=moodboard
     )
 
-    return moodboard, [
+    return [
         GetItem(
             id=item.id,
             author=UserGet.model_validate(item.author),
@@ -62,6 +87,11 @@ async def get_moodboard(id: int) -> list[Moodboard, list[GetItem]]:
             created_at=item.created_at
         ) for item in items
     ]
+
+
+async def get_moodboard_with_items(id: int) -> tuple[Moodboard, list[GetItem]]:
+    moodboard = await get_moodboard(id)
+    return moodboard, await get_moodboard_items(moodboard)
 
 
 async def get_all_moodboards() -> list[Moodboard]:
