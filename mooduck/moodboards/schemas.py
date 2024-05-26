@@ -39,6 +39,14 @@ class AddItemsToMoodboard(BaseModel):
     existing_items: list[int] | None = None
 
 
+# PATCH
+class PatchMoodboard(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    cover: str | None = None
+    is_private: bool | None = None
+
+
 # GET
 class GetItem(BaseModel):
     id: int

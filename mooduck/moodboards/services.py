@@ -5,10 +5,92 @@ from moodboards.models import (
     Moodboard,
     Item,
     ItemMoodboard,
+    FavMoodboard
 )
 from moodboards.schemas import CreateItem, GetItem
+from extra.services import get_instance_or_404
 
 
+# MOODBOARD
+async def get_moodboard(id: int) -> Moodboard:
+    moodboard = await Moodboard.all(
+    ).select_related(
+        'author'
+    ).get_or_none(id=id)
+
+    if not moodboard:
+        raise HTTPException(status_code=404)
+    return moodboard
+
+
+async def get_all_moodboards() -> list[Moodboard]:
+    return await Moodboard.all(
+    ).select_related(
+        'author'
+    ).filter(is_private=False)
+
+
+async def get_chaotic(user: User) -> Moodboard:
+    moodboard = await Moodboard.all(
+    ).select_related(
+        'author'
+    ).get_or_none(author=user, is_chaotic=True)
+
+    if not moodboard:
+        raise HTTPException(status_code=404)
+    return moodboard
+
+
+async def delete_moodboard(moodboard: Moodboard) -> None:
+    try:
+        await moodboard.delete()
+    except Exception as ex:
+        print(ex)
+    finally:
+        return
+
+
+async def update_moodboard(moodboard: Moodboard, **kwargs) -> Moodboard:
+    try:
+        return await moodboard.all().update(**kwargs)
+    except Exception as ex:
+        print(ex)
+        raise HTTPException(status_code=400)
+
+
+# FAV
+async def get_user_fav_moodboards(user: User) -> list[Moodboard]:
+    return await Moodboard.all(
+    ).select_related(
+        'fav_moodboard'
+    ).select_related(
+        'author'
+    ).filter(fav_moodboard__user=user)
+
+
+async def add_moodboard_to_favorite(user: User, moodboard_id: int) -> None:
+    favmood, is_created = await FavMoodboard.get_or_create(
+        user=user,
+        moodboard_id=moodboard_id
+    )
+    if not is_created:
+        raise HTTPException(
+            status_code=400,
+            detail='Уже в избранном'
+        )
+
+
+async def remove_moodboard_from_fav(user: User, moodboard_id: int) -> None:
+    instance = await get_instance_or_404(
+        FavMoodboard,
+        user=user,
+        moodboard_id=moodboard_id
+    )
+    await instance.all().delete()
+    return
+
+
+# ITEMS
 async def add_existing_items_to_moodboard(
     id_list: list[int],
     moodboard: Moodboard
@@ -43,28 +125,6 @@ async def add_existing_items_to_moodboard(
     ]
 
 
-async def get_moodboard(id: int) -> Moodboard:
-    moodboard = await Moodboard.all(
-    ).select_related(
-        'author'
-    ).get_or_none(id=id)
-
-    if not moodboard:
-        raise HTTPException(status_code=404)
-    return moodboard
-
-
-async def get_chaotic(user: User) -> Moodboard:
-    moodboard = await Moodboard.all(
-    ).select_related(
-        'author'
-    ).get_or_none(author=user, is_chaotic=True)
-
-    if not moodboard:
-        raise HTTPException(status_code=404)
-    return moodboard
-
-
 async def get_moodboard_items(moodboard: Moodboard) -> list[GetItem]:
     items = await Item.all(
     ).select_related(
@@ -92,13 +152,6 @@ async def get_moodboard_items(moodboard: Moodboard) -> list[GetItem]:
 async def get_moodboard_with_items(id: int) -> tuple[Moodboard, list[GetItem]]:
     moodboard = await get_moodboard(id)
     return moodboard, await get_moodboard_items(moodboard)
-
-
-async def get_all_moodboards() -> list[Moodboard]:
-    return await Moodboard.all(
-    ).select_related(
-        'author'
-    ).filter(is_private=False)
 
 
 async def create_item(
@@ -141,6 +194,7 @@ async def bulk_create_items(
 
 
 async def delete_item_from_moodboard(
+    user: User,
     moodboard: Moodboard,
     item_id: int,
     delete_item: bool = False,
