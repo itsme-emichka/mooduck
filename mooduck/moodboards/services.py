@@ -138,3 +138,24 @@ async def bulk_create_items(
             created_at=item.created_at
         ) for item in created_items
     ]
+
+
+async def delete_item_from_moodboard(
+    moodboard: Moodboard,
+    item_id: int,
+    delete_item: bool = False,
+) -> None:
+    moodboard_items_ids = await ItemMoodboard.all(
+    ).filter(
+        moodboard=moodboard
+    ).values_list('item_id', flat=True)
+
+    if item_id not in moodboard_items_ids:
+        raise HTTPException(404)
+
+    await ItemMoodboard.filter(
+        moodboard=moodboard,
+        item_id=item_id
+    ).delete()
+    if delete_item:
+        pass

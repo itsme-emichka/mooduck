@@ -17,7 +17,8 @@ from moodboards.services import (
     get_all_moodboards,
     get_moodboard,
     get_moodboard_items,
-    get_chaotic
+    get_chaotic,
+    delete_item_from_moodboard as delete_item_from_moodboard_db
 )
 from moodboards.utils import get_moodboard_response
 from extra.dependencies import is_authenticated
@@ -27,6 +28,7 @@ from extra.services import create_instance_by_kwargs
 router = APIRouter()
 
 
+# MOODBOARD
 @router.post('/moodboard')
 async def create_moodboard(
     user: Annotated[User, Depends(is_authenticated)],
@@ -92,11 +94,30 @@ async def add_items_to_moodboard(
     )
 
 
+@router.delete('/moodboard/{id}/{item_id}')
+async def delete_item_from_moodboard(
+    id: int,
+    item_id: int,
+    user: Annotated[User, Depends(is_authenticated)]
+) -> GetMoodboard:
+    moodboard = await get_moodboard(id)
+    if not user == moodboard.author:
+        raise HTTPException(
+            status_code=401)
+    await delete_item_from_moodboard_db(moodboard, item_id)
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        moodboard.author
+    )
+
+
 @router.get('/moodboard')
 async def list_moodboard() -> list[ListMoodboard]:
     return await get_all_moodboards()
 
 
+# CHAOTIC
 @router.get('/chaotic')
 async def retrive_chaotic(
     user: Annotated[User, Depends(is_authenticated)]
@@ -130,6 +151,20 @@ async def add_items_to_chaotic(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Пустой запрос или такие айтемы уже на мудборде'
         )
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        moodboard.author
+    )
+
+
+@router.delete('/chaotic/{item_id}')
+async def delete_item_from_chaotic(
+    user: Annotated[User, Depends(is_authenticated)],
+    item_id: int,
+) -> GetMoodboard:
+    moodboard = await get_chaotic(user)
+    await delete_item_from_moodboard_db(moodboard, item_id)
     return get_moodboard_response(
         moodboard,
         await get_moodboard_items(moodboard),
