@@ -6,20 +6,6 @@ from users.schemas import UserGet
 from moodboards.models import MOODBOARD_TYPES
 
 
-# class Media(BaseModel):
-#     media_type: str
-#     media_url: str
-
-#     @field_validator('media_type')
-#     @classmethod
-#     def media_type_validator(cls, value: str):
-#         if value not in MEDIA_TYPES:
-#             raise ValueError(
-#                 f'Media type {value} not available'
-#                 f'Types available: {MEDIA_TYPES}'
-#             )
-
-
 # POST
 class CreateItem(BaseModel):
     name: str
@@ -81,5 +67,4 @@ class ListMoodboard(BaseModel):
     name: str
     description: str | None = None
     cover: str | None = None
-    is_chaotic: bool
     created_at: datetime

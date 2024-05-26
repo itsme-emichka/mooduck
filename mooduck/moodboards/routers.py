@@ -7,6 +7,7 @@ from moodboards.models import Moodboard
 from moodboards.schemas import (
     CreateMoodboard,
     GetMoodboard,
+    ListMoodboard
 )
 from moodboards.services import (
     bulk_create_items,
@@ -54,5 +55,5 @@ async def retrieve_moodboard(id: int) -> GetMoodboard:
 
 
 @router.get('/moodboard')
-async def list_moodboard() -> list[GetMoodboard]:
+async def list_moodboard() -> list[ListMoodboard]:
     return await get_all_moodboards()
