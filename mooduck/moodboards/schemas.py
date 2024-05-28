@@ -47,6 +47,24 @@ class PatchMoodboard(BaseModel):
     is_private: bool | None = None
 
 
+class PatchItem(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    item_type: str | None = None
+    link: str | None = None
+    media: list[str] | None = None
+
+    @field_validator('item_type')
+    @classmethod
+    def item_type_validator(cls, value: str):
+        if value not in MOODBOARD_TYPES.keys():
+            raise ValueError(
+                f'Item type {value} not available '
+                f'Types available: {MOODBOARD_TYPES.keys()}'
+            )
+        return value
+
+
 # GET
 class GetItem(BaseModel):
     id: int

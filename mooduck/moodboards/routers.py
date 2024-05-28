@@ -9,14 +9,15 @@ from fastapi import (
 )
 
 from users.models import User
-from moodboards.models import Moodboard
+from moodboards.models import Moodboard, Item
 from moodboards.schemas import (
     CreateMoodboard,
     GetMoodboard,
     ListMoodboard,
     AddItemsToMoodboard,
-    PatchMoodboard
-
+    PatchMoodboard,
+    GetItem,
+    PatchItem
 )
 from moodboards.services import (
     bulk_create_items,
@@ -30,10 +31,11 @@ from moodboards.services import (
     update_moodboard,
     get_user_fav_moodboards,
     add_moodboard_to_favorite as add_moodboard_to_favorite_db,
-    remove_moodboard_from_fav
+    remove_moodboard_from_fav,
+    update_item
 )
-from moodboards.utils import get_moodboard_response
-from moodboards.dependencies import is_moodboard_author
+from moodboards.utils import get_moodboard_response, get_item_response
+from moodboards.dependencies import is_moodboard_author, is_item_author
 from extra.dependencies import is_authenticated
 from extra.services import create_instance_by_kwargs
 
@@ -131,61 +133,6 @@ async def delete_moodboard_from_fav(
     await remove_moodboard_from_fav(user, moodboard_id)
 
 
-# ITEMS
-@router.post('/moodboard/{moodboard_id}')
-async def add_items_to_moodboard(
-    moodboard_id: int,
-    user_moodboard: Annotated[
-        tuple[User, Moodboard],
-        Depends(is_moodboard_author)
-    ],
-    data: AddItemsToMoodboard
-) -> GetMoodboard:
-    user, moodboard = user_moodboard
-    items = []
-    if data.items:
-        items = await bulk_create_items(user, moodboard, data.items)
-    if data.existing_items:
-        items.extend(
-            await add_existing_items_to_moodboard(
-                data.existing_items,
-                moodboard
-            )
-        )
-    if not items:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Пустой запрос или такие айтемы уже на мудборде'
-        )
-    return get_moodboard_response(
-        moodboard,
-        await get_moodboard_items(moodboard),
-        moodboard.author
-    )
-
-
-@router.delete('/moodboard/{moodboard_id}/{item_id}')
-async def delete_item_from_moodboard(
-    moodboard_id: int,
-    item_id: int,
-    user_moodboard: Annotated[
-        tuple[User, Moodboard],
-        Depends(is_moodboard_author)
-    ],
-) -> GetMoodboard:
-    user, moodboard = user_moodboard
-    await delete_item_from_moodboard_db(
-        user=user,
-        moodboard=moodboard,
-        item_id=item_id,
-    )
-    return get_moodboard_response(
-        moodboard,
-        await get_moodboard_items(moodboard),
-        moodboard.author
-    )
-
-
 # CHAOTIC
 @router.get('/chaotic')
 async def retrive_chaotic(
@@ -243,3 +190,73 @@ async def delete_item_from_chaotic(
         await get_moodboard_items(moodboard),
         moodboard.author
     )
+
+
+# ITEMS
+@router.post('/moodboard/{moodboard_id}')
+async def add_items_to_moodboard(
+    moodboard_id: int,
+    user_moodboard: Annotated[
+        tuple[User, Moodboard],
+        Depends(is_moodboard_author)
+    ],
+    data: AddItemsToMoodboard
+) -> GetMoodboard:
+    user, moodboard = user_moodboard
+    items = []
+    if data.items:
+        items = await bulk_create_items(user, moodboard, data.items)
+    if data.existing_items:
+        items.extend(
+            await add_existing_items_to_moodboard(
+                data.existing_items,
+                moodboard
+            )
+        )
+    if not items:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Пустой запрос или такие айтемы уже на мудборде'
+        )
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        moodboard.author
+    )
+
+
+@router.delete('/moodboard/{moodboard_id}/{item_id}')
+async def delete_item_from_moodboard(
+    moodboard_id: int,
+    item_id: int,
+    user_moodboard: Annotated[
+        tuple[User, Moodboard],
+        Depends(is_moodboard_author)
+    ],
+) -> GetMoodboard:
+    user, moodboard = user_moodboard
+    await delete_item_from_moodboard_db(
+        user=user,
+        moodboard=moodboard,
+        item_id=item_id,
+    )
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        moodboard.author
+    )
+
+
+@router.patch('/item/{item_id}')
+async def patch_item(
+    item_id: int,
+    user_item: Annotated[
+        tuple[User, Item],
+        Depends(is_item_author)
+    ],
+    data: PatchItem
+) -> GetItem:
+    user, item = user_item
+    data = data.model_dump(exclude_none=True)
+    updated_item = await update_item(item, **data)
+    return get_item_response(updated_item)

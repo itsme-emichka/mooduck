@@ -158,7 +158,7 @@ async def create_item(
     author: User,
     item: CreateItem,
     moodboard: Moodboard | None = None,
-) -> GetItem:
+) -> Item:
     if not moodboard:
         moodboard = await Moodboard.get(author=author, is_chaotic=True)
     created_item = await Item.create(
@@ -170,6 +170,22 @@ async def create_item(
         moodboard=moodboard,
     )
     return created_item
+
+
+async def get_item(item_id: int) -> Item:
+    item = await Item.all().select_related('author').get_or_none(id=item_id)
+    if not item:
+        raise HTTPException(404)
+    return item
+
+
+async def update_item(item: Item, **kwargs) -> Item:
+    try:
+        await item.all().update(**kwargs)
+    except Exception as ex:
+        print(ex)
+    finally:
+        return await get_item(item.id)
 
 
 async def bulk_create_items(
