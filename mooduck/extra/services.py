@@ -21,7 +21,8 @@ async def create_instance_by_kwargs(model: Model, **kwargs) -> QuerySetSingle:
     try:
         return await model.create(**kwargs)
     except IntegrityError as ex:
+        print(ex)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=ex
+            detail='Пользователь с такими данными уже существует'
         )

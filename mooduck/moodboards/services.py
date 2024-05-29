@@ -1,4 +1,6 @@
 from fastapi import HTTPException
+from tortoise.exceptions import IntegrityError
+
 from users.models import User
 from users.schemas import UserGet
 from moodboards.models import (
@@ -9,6 +11,7 @@ from moodboards.models import (
 )
 from moodboards.schemas import CreateItem, GetItem
 from extra.services import get_instance_or_404
+from extra.exceptions import NotAuthorized
 
 
 # MOODBOARD
@@ -28,6 +31,24 @@ async def get_all_moodboards() -> list[Moodboard]:
     ).select_related(
         'author'
     ).filter(is_private=False)
+
+
+async def get_user_moodboards(
+    user: User,
+    include_private: bool = False
+) -> list[Moodboard]:
+    try:
+        if include_private:
+            return await Moodboard.all(
+            ).select_related(
+                'author'
+            ).filter(author=user)
+        return await Moodboard.all(
+        ).select_related(
+            'author'
+        ).filter(author=user, is_private=False)
+    except IntegrityError:
+        raise HTTPException(404, 'Пользователь не найден')
 
 
 async def get_chaotic(user: User) -> Moodboard:
@@ -149,8 +170,13 @@ async def get_moodboard_items(moodboard: Moodboard) -> list[GetItem]:
     ]
 
 
-async def get_moodboard_with_items(id: int) -> tuple[Moodboard, list[GetItem]]:
+async def get_moodboard_with_items(
+    id: int,
+    user: User
+) -> tuple[Moodboard, list[GetItem]]:
     moodboard = await get_moodboard(id)
+    if moodboard.is_private and moodboard.author != user:
+        raise NotAuthorized
     return moodboard, await get_moodboard_items(moodboard)
 
 

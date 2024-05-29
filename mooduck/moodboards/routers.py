@@ -5,7 +5,8 @@ from fastapi import (
     Depends,
     HTTPException,
     status,
-    Response
+    Response,
+    Query
 )
 
 from users.models import User
@@ -13,7 +14,6 @@ from moodboards.models import Moodboard, Item
 from moodboards.schemas import (
     CreateMoodboard,
     GetMoodboard,
-    ListMoodboard,
     AddItemsToMoodboard,
     PatchMoodboard,
     GetItem,
@@ -32,12 +32,14 @@ from moodboards.services import (
     get_user_fav_moodboards,
     add_moodboard_to_favorite as add_moodboard_to_favorite_db,
     remove_moodboard_from_fav,
-    update_item
+    update_item,
+    get_user_moodboards
 )
 from moodboards.utils import get_moodboard_response, get_item_response
 from moodboards.dependencies import is_moodboard_author, is_item_author
 from extra.dependencies import is_authenticated
-from extra.services import create_instance_by_kwargs
+from extra.services import create_instance_by_kwargs, get_instance_or_404
+from config import SLUG_PATTERN
 
 
 router = APIRouter()
@@ -70,8 +72,11 @@ async def create_moodboard(
 
 
 @router.get('/moodboard/{moodboard_id}')
-async def retrieve_moodboard(moodboard_id: int) -> GetMoodboard:
-    moodboard, items = await get_moodboard_with_items_db(moodboard_id)
+async def retrieve_moodboard(
+    moodboard_id: int,
+    user: Annotated[User, Depends(is_authenticated)]
+) -> GetMoodboard:
+    moodboard, items = await get_moodboard_with_items_db(moodboard_id, user)
     return get_moodboard_response(moodboard, items, moodboard.author)
 
 
@@ -88,11 +93,6 @@ async def delete_moodboard(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get('/moodboard')
-async def list_moodboard() -> list[ListMoodboard]:
-    return await get_all_moodboards()
-
-
 @router.patch('/moodboard/{moodboard_id}')
 async def patch_moodboard(
     moodboard_id: int,
@@ -106,6 +106,21 @@ async def patch_moodboard(
     data = data.model_dump(exclude_none=True)
     await update_moodboard(moodboard, **data)
     return await retrieve_moodboard(moodboard_id)
+
+
+@router.get('/moodboard')
+async def list_user_moodboards(
+    user: Annotated[User, Depends(is_authenticated)],
+    username: Annotated[str | None, Query(pattern=SLUG_PATTERN)] = None,
+) -> list[GetMoodboard]:
+    if not username:
+        return await get_all_moodboards()
+    if username == 'slf':
+        return await get_user_moodboards(user=user, include_private=True)
+    user = await get_instance_or_404(User, username=username)
+    if not user:
+        raise HTTPException(404, 'Пользователь не найден')
+    return await get_user_moodboards(user)
 
 
 # FAV

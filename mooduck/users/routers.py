@@ -25,6 +25,7 @@ async def create_new_user(user_data: UserCreate) -> UserGet:
         email=user_data.email,
         password=password.decode(),
         name=user_data.name,
+        bio=user_data.bio
     )
     _ = await create_instance_by_kwargs(
         Moodboard,
@@ -35,16 +36,6 @@ async def create_new_user(user_data: UserCreate) -> UserGet:
     )
     print(_)
     return user
-
-
-@router.get('/users')
-async def users_list() -> list[UserGet]:
-    return await User.all()
-
-
-@router.delete('/users/{id}')
-async def delete_user(id: int):
-    return await User.get_or_none(id=id).delete()
 
 
 @router.post('/auth')

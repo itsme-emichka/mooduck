@@ -12,6 +12,7 @@ class UserGet(BaseModel):
     email: EmailStr
     name: str | None = None
     role: str = 'user'
+    bio: str | None = None
 
     class Config:
         from_attributes = True
@@ -22,3 +23,4 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str | None = None
+    bio: str | None = None
