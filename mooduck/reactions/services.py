@@ -46,3 +46,17 @@ async def add_comment_to_moodboard(
         print(ex)
         raise HTTPException(400, 'wrong data')
     return moodboard
+
+
+async def update_comment(comment: Comment, text: str) -> Comment:
+    try:
+        comment.update_from_dict({'text': text})
+        await comment.save()
+        return comment
+    except IntegrityError as ex:
+        print(ex)
+        raise HTTPException(400)
+
+
+async def delete_comment(comment: Comment) -> None:
+    await comment.delete()
