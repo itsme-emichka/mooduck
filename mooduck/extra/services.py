@@ -10,10 +10,7 @@ async def get_instance_or_404(
 ) -> QuerySetSingle:
     instance = await model.get_or_none(**kwargs)
     if not instance:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='сущность не найдена'
-        )
+        raise HTTPException(404)
     return instance
 
 
@@ -24,5 +21,5 @@ async def create_instance_by_kwargs(model: Model, **kwargs) -> QuerySetSingle:
         print(ex)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Пользователь с такими данными уже существует'
+            detail='Already exists'
         )

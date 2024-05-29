@@ -6,6 +6,11 @@ import bcrypt
 
 from users.schemas import UserCreate, UserGet
 from users.models import User
+from users.services import (
+    subscribe_on_user as subscribe_on_user_db,
+    get_user_subs,
+    delete_user_from_subs
+)
 from moodboards.models import Moodboard
 from extra.services import (create_instance_by_kwargs, get_instance_or_404)
 from extra.utils import get_password_hash, create_access_token
@@ -64,3 +69,28 @@ async def get_current_user(
 @router.get('/user/{user_id}')
 async def retrieve_user(user_id: int) -> UserGet:
     return await get_instance_or_404(User, id=user_id)
+
+
+@router.post('/user/{user_id}/sub')
+async def subscribe_on_user(
+    user_id: int,
+    user: Annotated[User, Depends(is_authenticated)]
+):
+    subscribed_for: User = await subscribe_on_user_db(user, user_id)
+    return f'Успешно подписались на пользователя {subscribed_for.username}'
+
+
+@router.get('/sub')
+async def list_subs(
+    user: Annotated[User, Depends(is_authenticated)]
+) -> list[UserGet]:
+    return await get_user_subs(user)
+
+
+@router.delete('/sub/{user_id}')
+async def unsubscribe_from_user(
+    user_id: int,
+    user: Annotated[User, Depends(is_authenticated)]
+):
+    await delete_user_from_subs(user, user_id)
+    return 'Успешно отписались от пользователя'
