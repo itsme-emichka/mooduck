@@ -28,7 +28,8 @@ from moodboards.services import (
     add_moodboard_to_favorite as add_moodboard_to_favorite_db,
     remove_moodboard_from_fav,
     get_user_moodboards,
-    get_user_subs_moodboards
+    get_user_subs_moodboards,
+    get_random_moodboard
 )
 from moodboards.utils import get_moodboard_response
 from moodboards.dependencies import is_moodboard_author
@@ -117,12 +118,23 @@ async def patch_moodboard(
 
 
 @router.get('/moodboard')
-async def list_user_moodboards(
+async def list_moodboards(
     user: Annotated[User, Depends(is_authenticated)],
     username: Annotated[str | None, Query(pattern=SLUG_PATTERN)] = None,
-) -> list[ListMoodboard]:
+    random: bool = False,
+    search: str | None = None
+) -> list[ListMoodboard] | GetMoodboard:
+    if random:
+        moodboard = await get_random_moodboard()
+        return get_moodboard_response(
+            moodboard,
+            await get_moodboard_items(moodboard),
+            await get_moodboard_comments(moodboard)
+        )
+
     if not username:
-        return await get_all_moodboards()
+        return await get_all_moodboards(search)
+
     if username == 'slf':
         return await get_user_moodboards(user=user, include_private=True)
     user = await get_instance_or_404(User, username=username)

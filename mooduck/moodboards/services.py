@@ -1,5 +1,7 @@
 from fastapi import HTTPException
+from tortoise.expressions import Q
 from tortoise.exceptions import IntegrityError
+from tortoise.contrib.postgres.functions import Random
 
 from users.models import User
 from moodboards.models import (
@@ -37,11 +39,22 @@ async def get_moodboard_check_authorization(id: int, user: User) -> Moodboard:
     return moodboard
 
 
-async def get_all_moodboards() -> list[Moodboard]:
+async def get_all_moodboards(search: str | None = None) -> list[Moodboard]:
+    if not search:
+        return await Moodboard.all(
+        ).select_related(
+            'author'
+        ).filter(
+            is_private=False
+        )
     return await Moodboard.all(
     ).select_related(
         'author'
-    ).filter(is_private=False)
+    ).filter(
+        is_private=False
+    ).filter(
+        Q(name__contains=search) | Q(description__contains=search)
+    )
 
 
 async def get_user_moodboards(
@@ -166,3 +179,15 @@ async def get_moodboard_with_items_and_comments(
         moodboard,
         await get_moodboard_items(moodboard),
         await get_moodboard_comments(moodboard))
+
+
+async def get_random_moodboard() -> Moodboard:
+    return await Moodboard.filter(
+        is_private=False
+    ).annotate(
+        order=Random()
+    ).order_by(
+        'order'
+    ).first(
+    ).select_related(
+        'author')
