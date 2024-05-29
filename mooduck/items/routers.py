@@ -139,7 +139,6 @@ async def retrieve_moodboard_item(
 
 @router.patch('/item/{item_id}')
 async def patch_item(
-    item_id: int,
     user_item: Annotated[
         tuple[User, Item],
         Depends(is_item_author)
@@ -148,5 +147,5 @@ async def patch_item(
 ) -> GetItem:
     user, item = user_item
     data = data.model_dump(exclude_none=True)
-    updated_item = await update_item(item, **data)
+    updated_item = await update_item(item, data)
     return get_item_response(updated_item)

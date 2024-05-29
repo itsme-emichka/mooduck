@@ -65,9 +65,11 @@ async def get_item(item_id: int) -> Item:
     return item
 
 
-async def update_item(item: Item, **kwargs) -> Item:
+async def update_item(item: Item, data: dict) -> Item:
     try:
-        await item.all().update(**kwargs)
+        item.update_from_dict(data)
+        await item.save()
+        return item
     except Exception as ex:
         print(ex)
     finally:
