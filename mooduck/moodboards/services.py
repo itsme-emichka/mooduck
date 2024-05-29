@@ -123,6 +123,25 @@ async def remove_moodboard_from_fav(user: User, moodboard_id: int) -> None:
     return
 
 
+async def get_user_subs_moodboards(user: User) -> list[Moodboard]:
+    subscriptions = await User.all(
+    ).select_related(
+        'subscribed_for'
+    ).filter(
+        subscribed_for__subscriber=user
+    ).values_list('id', flat=True)
+
+    moodboards = await Moodboard.all(
+    ).select_related(
+        'author'
+    ).filter(
+        author_id__in=subscriptions,
+        is_private=False,
+        is_chaotic=False,
+    )
+    return moodboards
+
+
 # ITEMS
 async def add_existing_items_to_moodboard(
     id_list: list[int],

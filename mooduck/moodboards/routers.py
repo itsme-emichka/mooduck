@@ -34,7 +34,8 @@ from moodboards.services import (
     add_moodboard_to_favorite as add_moodboard_to_favorite_db,
     remove_moodboard_from_fav,
     update_item,
-    get_user_moodboards
+    get_user_moodboards,
+    get_user_subs_moodboards
 )
 from moodboards.utils import get_moodboard_response, get_item_response
 from moodboards.dependencies import is_moodboard_author, is_item_author
@@ -147,6 +148,13 @@ async def delete_moodboard_from_fav(
     user: Annotated[User, Depends(is_authenticated)]
 ) -> Response:
     await remove_moodboard_from_fav(user, moodboard_id)
+
+
+@router.get('/sub/moodboard')
+async def get_subs_moodboards(
+    user: Annotated[User, Depends(is_authenticated)],
+) -> list[ListMoodboard]:
+    return await get_user_subs_moodboards(user)
 
 
 # CHAOTIC

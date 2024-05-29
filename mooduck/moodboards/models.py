@@ -35,6 +35,9 @@ class Moodboard(Model):
     is_chaotic = fields.BooleanField(default=False)
     created_at = fields.DatetimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created_at', 'name']
+
 
 class FavMoodboard(Model):
     id = fields.BigIntField(pk=True)
@@ -72,3 +75,6 @@ class Item(Model):
     link = fields.CharField(max_length=1024, null=True)
     media = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at', 'name']
