@@ -16,7 +16,7 @@ router = APIRouter()
 oauth_scheme = OAuth2PasswordBearer('auth', auto_error=True)
 
 
-@router.post('/users')
+@router.post('/user')
 async def create_new_user(user_data: UserCreate) -> UserGet:
     password = get_password_hash(user_data.password)
     user: User = await create_instance_by_kwargs(
@@ -54,8 +54,13 @@ async def auth_user(
     return token
 
 
-@router.get('/users/me')
+@router.get('/user/me')
 async def get_current_user(
     user: Annotated[User, Depends(is_authenticated)]
 ) -> UserGet:
     return user
+
+
+@router.get('/user/{user_id}')
+async def retrieve_user(user_id: int) -> UserGet:
+    return await get_instance_or_404(User, id=user_id)

@@ -17,7 +17,8 @@ from moodboards.schemas import (
     AddItemsToMoodboard,
     PatchMoodboard,
     GetItem,
-    PatchItem
+    PatchItem,
+    ListMoodboard
 )
 from moodboards.services import (
     bulk_create_items,
@@ -112,7 +113,7 @@ async def patch_moodboard(
 async def list_user_moodboards(
     user: Annotated[User, Depends(is_authenticated)],
     username: Annotated[str | None, Query(pattern=SLUG_PATTERN)] = None,
-) -> list[GetMoodboard]:
+) -> list[ListMoodboard]:
     if not username:
         return await get_all_moodboards()
     if username == 'slf':
@@ -127,7 +128,7 @@ async def list_user_moodboards(
 @router.get('/fav')
 async def list_fav_moodboard(
     user: Annotated[User, Depends(is_authenticated)]
-) -> list[GetMoodboard]:
+) -> list[ListMoodboard]:
     return await get_user_fav_moodboards(user)
 
 

@@ -99,3 +99,5 @@ class ListMoodboard(BaseModel):
     description: str | None = None
     cover: str | None = None
     created_at: datetime
+    is_private: bool
+    is_chaotic: bool

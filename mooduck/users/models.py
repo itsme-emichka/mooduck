@@ -46,12 +46,3 @@ class Subscription(Model):
         'models.User',
         related_name='subscribed_for'
     )
-
-
-class NoteBook(Model):
-    id = fields.BigIntField(pk=True)
-    owner = fields.ForeignKeyField(
-        'models.User',
-        related_name='notebook'
-    )
-    notebook = fields.TextField()

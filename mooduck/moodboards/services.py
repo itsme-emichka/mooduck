@@ -63,6 +63,8 @@ async def get_chaotic(user: User) -> Moodboard:
 
 
 async def delete_moodboard(moodboard: Moodboard) -> None:
+    if moodboard.is_chaotic:
+        raise HTTPException(400, 'Нельзя удалить хаотик')
     try:
         await moodboard.delete()
     except Exception as ex:
@@ -90,6 +92,16 @@ async def get_user_fav_moodboards(user: User) -> list[Moodboard]:
 
 
 async def add_moodboard_to_favorite(user: User, moodboard_id: int) -> None:
+    moodboard = await get_moodboard(moodboard_id)
+    if (
+        (
+            moodboard.is_chaotic
+        ) or (
+            moodboard.is_private and moodboard.author != user
+        )
+    ):
+        raise HTTPException(401)
+
     favmood, is_created = await FavMoodboard.get_or_create(
         user=user,
         moodboard_id=moodboard_id
