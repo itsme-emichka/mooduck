@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from tortoise.expressions import Q
 
 from users.models import User, Subscription
 from extra.services import get_instance_or_404
@@ -31,3 +32,11 @@ async def delete_user_from_subs(user: User, sub_for_id: int) -> None:
     )
     await sub_instance.delete()
     return
+
+
+async def get_all_users(search: str) -> list[User]:
+    users = User.all()
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) | Q(name__icontains=search))
+    return await users

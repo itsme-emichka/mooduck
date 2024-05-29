@@ -9,7 +9,8 @@ from users.models import User
 from users.services import (
     subscribe_on_user as subscribe_on_user_db,
     get_user_subs,
-    delete_user_from_subs
+    delete_user_from_subs,
+    get_all_users
 )
 from moodboards.models import Moodboard
 from extra.services import (create_instance_by_kwargs, get_instance_or_404)
@@ -41,6 +42,14 @@ async def create_new_user(user_data: UserCreate) -> UserGet:
     )
     print(_)
     return user
+
+
+@router.get('/user')
+async def list_user(
+    user: Annotated[User, Depends(is_authenticated)],
+    search: str | None = None
+) -> list[UserGet]:
+    return await get_all_users(search)
 
 
 @router.post('/auth')

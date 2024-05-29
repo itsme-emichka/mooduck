@@ -144,22 +144,6 @@ async def get_random_item(item_type: str | None = None) -> Item:
     ).first()
 
 
-# async def get_all_items(
-#     search: str | None = None,
-#     item_type: str | None = None
-# ) -> list[Item]:
-#     if not search:
-#         return await Item.filter(
-#             is_private=False
-#         ).select_related('author')
-#     return await Item.filter(
-#         is_private=False
-#     ).select_related(
-#         'author'
-#     ).filter(
-#         Q(name__icontains=search) | Q(description__icontains=search))
-
-
 async def get_all_items(
     search: str | None = None,
     item_type: str | None = None
