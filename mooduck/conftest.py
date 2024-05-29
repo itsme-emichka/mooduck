@@ -5,7 +5,7 @@ from httpx import AsyncClient, ASGITransport
 from main import app
 from users.models import User
 from extra.utils import get_password_hash, create_access_token
-from moodboards.models import Item, Moodboard
+from items.models import Item
 
 
 # SETUP
@@ -17,7 +17,14 @@ async def init_db(
     """Initial database connection"""
     await Tortoise.init(
         db_url=db_url,
-        modules={'models': ['users.models', 'moodboards.models']},
+        modules={
+            'models': [
+                'users.models',
+                'moodboards.models',
+                'items.models',
+                'reactions.models'
+            ]
+        },
         _create_db=create_db
     )
     if schemas:

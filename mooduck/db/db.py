@@ -14,7 +14,7 @@ TORTOISE_ORM = {
     },
     'apps': {
         'models': {
-            'models': ['users.models', 'moodboards.models', 'reactions.models', 'aerich.models'],
+            'models': ['users.models', 'moodboards.models', 'reactions.models', 'aerich.models', 'items.models'],
             'default_connection': 'default',
         },
     },

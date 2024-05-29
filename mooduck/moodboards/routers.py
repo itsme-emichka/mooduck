@@ -10,44 +10,40 @@ from fastapi import (
 )
 
 from users.models import User
-from moodboards.models import Moodboard, Item
+from moodboards.models import Moodboard
 from moodboards.schemas import (
     CreateMoodboard,
     GetMoodboard,
-    AddItemsToMoodboard,
     PatchMoodboard,
-    GetItem,
-    PatchItem,
     ListMoodboard
 )
 from moodboards.services import (
-    bulk_create_items,
     get_moodboard_with_items_and_comments,
-    add_existing_items_to_moodboard,
     get_all_moodboards,
     get_moodboard_items,
     get_chaotic,
-    delete_item_from_moodboard as delete_item_from_moodboard_db,
     delete_moodboard as delete_moodboard_db,
     update_moodboard,
     get_user_fav_moodboards,
     add_moodboard_to_favorite as add_moodboard_to_favorite_db,
     remove_moodboard_from_fav,
-    update_item,
     get_user_moodboards,
     get_user_subs_moodboards
 )
-from moodboards.utils import get_moodboard_response, get_item_response
-from moodboards.dependencies import is_moodboard_author, is_item_author
+from moodboards.utils import get_moodboard_response
+from moodboards.dependencies import is_moodboard_author
 from extra.dependencies import is_authenticated
 from extra.services import create_instance_by_kwargs, get_instance_or_404
 from config import SLUG_PATTERN
 from reactions.routers import router as reactions_router
 from reactions.services import get_moodboard_comments
+from items.routers import router as items_router
+from items.services import bulk_create_items, add_existing_items_to_moodboard
 
 
 router = APIRouter()
 router.include_router(reactions_router)
+router.include_router(items_router)
 
 
 # MOODBOARD
@@ -73,7 +69,7 @@ async def create_moodboard(
             moodboard
         )
         items.extend(existing_items)
-    return get_moodboard_response(moodboard, items, user)
+    return get_moodboard_response(moodboard, items, [])
 
 
 @router.get('/moodboard/{moodboard_id}')
@@ -112,8 +108,12 @@ async def patch_moodboard(
 ):
     user, moodboard = user_moodboard
     data = data.model_dump(exclude_none=True)
-    await update_moodboard(moodboard, **data)
-    return await retrieve_moodboard(moodboard_id)
+    moodboard = await update_moodboard(moodboard, data)
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        await get_moodboard_comments(moodboard)
+    )
 
 
 @router.get('/moodboard')
@@ -148,7 +148,7 @@ async def add_moodboard_to_favorite(
     return Response(status_code=200)
 
 
-@router.delete('/moodboard/{moodboard_id}/fav')
+@router.delete('/fav/{moodboard_id}')
 async def delete_moodboard_from_fav(
     moodboard_id: int,
     user: Annotated[User, Depends(is_authenticated)]
@@ -174,119 +174,3 @@ async def retrive_chaotic(
         items=await get_moodboard_items(moodboard),
         comments=await get_moodboard_comments(moodboard)
     )
-
-
-@router.post('/chaotic')
-async def add_items_to_chaotic(
-    user: Annotated[User, Depends(is_authenticated)],
-    data: AddItemsToMoodboard
-) -> GetMoodboard:
-    moodboard = await get_chaotic(user)
-    items = []
-    if data.items:
-        items = await bulk_create_items(user, moodboard, data.items)
-    if data.existing_items:
-        items.extend(
-            await add_existing_items_to_moodboard(
-                data.existing_items,
-                moodboard
-            )
-        )
-    if not items:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Пустой запрос или такие айтемы уже на мудборде'
-        )
-    return get_moodboard_response(
-        moodboard,
-        await get_moodboard_items(moodboard),
-        await get_moodboard_comments(moodboard)
-    )
-
-
-@router.delete('/chaotic/{item_id}')
-async def delete_item_from_chaotic(
-    user: Annotated[User, Depends(is_authenticated)],
-    item_id: int,
-) -> GetMoodboard:
-    moodboard = await get_chaotic(user)
-    await delete_item_from_moodboard_db(
-        user=user,
-        moodboard=moodboard,
-        item_id=item_id,
-    )
-    return get_moodboard_response(
-        moodboard,
-        await get_moodboard_items(moodboard),
-        await get_moodboard_comments(moodboard)
-    )
-
-
-# ITEMS
-@router.post('/moodboard/{moodboard_id}')
-async def add_items_to_moodboard(
-    moodboard_id: int,
-    user_moodboard: Annotated[
-        tuple[User, Moodboard],
-        Depends(is_moodboard_author)
-    ],
-    data: AddItemsToMoodboard
-) -> GetMoodboard:
-    user, moodboard = user_moodboard
-    items = []
-    if data.items:
-        items = await bulk_create_items(user, moodboard, data.items)
-    if data.existing_items:
-        items.extend(
-            await add_existing_items_to_moodboard(
-                data.existing_items,
-                moodboard
-            )
-        )
-    if not items:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Пустой запрос или такие айтемы уже на мудборде'
-        )
-    return get_moodboard_response(
-        moodboard,
-        await get_moodboard_items(moodboard),
-        await get_moodboard_comments(moodboard)
-    )
-
-
-@router.delete('/moodboard/{moodboard_id}/{item_id}')
-async def delete_item_from_moodboard(
-    moodboard_id: int,
-    item_id: int,
-    user_moodboard: Annotated[
-        tuple[User, Moodboard],
-        Depends(is_moodboard_author)
-    ],
-) -> GetMoodboard:
-    user, moodboard = user_moodboard
-    await delete_item_from_moodboard_db(
-        user=user,
-        moodboard=moodboard,
-        item_id=item_id,
-    )
-    return get_moodboard_response(
-        moodboard,
-        await get_moodboard_items(moodboard),
-        await get_moodboard_comments(moodboard),
-    )
-
-
-@router.patch('/item/{item_id}')
-async def patch_item(
-    item_id: int,
-    user_item: Annotated[
-        tuple[User, Item],
-        Depends(is_item_author)
-    ],
-    data: PatchItem
-) -> GetItem:
-    user, item = user_item
-    data = data.model_dump(exclude_none=True)
-    updated_item = await update_item(item, **data)
-    return get_item_response(updated_item)

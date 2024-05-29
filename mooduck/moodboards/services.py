@@ -2,18 +2,16 @@ from fastapi import HTTPException
 from tortoise.exceptions import IntegrityError
 
 from users.models import User
-from users.schemas import UserGet
 from moodboards.models import (
     Moodboard,
-    Item,
-    ItemMoodboard,
     FavMoodboard
 )
-from moodboards.schemas import CreateItem, GetItem
 from extra.services import get_instance_or_404
 from extra.exceptions import NotAuthorized
 from reactions.models import Comment
 from reactions.services import get_moodboard_comments
+from items.services import get_moodboard_items
+from items.models import Item
 
 
 # MOODBOARD
@@ -25,6 +23,17 @@ async def get_moodboard(id: int) -> Moodboard:
 
     if not moodboard:
         raise HTTPException(status_code=404)
+    return moodboard
+
+
+async def get_moodboard_check_authorization(id: int, user: User) -> Moodboard:
+    moodboard = await get_moodboard(id)
+    if (
+        (
+            moodboard.is_private or moodboard.is_chaotic
+        ) and moodboard.author != user
+    ):
+        raise HTTPException(401)
     return moodboard
 
 
@@ -75,9 +84,11 @@ async def delete_moodboard(moodboard: Moodboard) -> None:
         return
 
 
-async def update_moodboard(moodboard: Moodboard, **kwargs) -> Moodboard:
+async def update_moodboard(moodboard: Moodboard, data: dict) -> Moodboard:
     try:
-        return await moodboard.all().update(**kwargs)
+        moodboard.update_from_dict(data)
+        await moodboard.save()
+        return moodboard
     except Exception as ex:
         print(ex)
         raise HTTPException(status_code=400)
@@ -144,52 +155,6 @@ async def get_user_subs_moodboards(user: User) -> list[Moodboard]:
     return moodboards
 
 
-# ITEMS
-async def add_existing_items_to_moodboard(
-    id_list: list[int],
-    moodboard: Moodboard
-) -> list[GetItem]:
-    moodboard_items_ids = await Item.all(
-    ).select_related(
-        'item_moodboard'
-    ).filter(
-        item_moodboard__moodboard=moodboard
-    ).values_list('id', flat=True)
-    diff = set(id_list).difference(set(moodboard_items_ids))
-    if not diff:
-        return []
-
-    items = await Item.filter(id__in=diff).select_related('author')
-
-    await ItemMoodboard.bulk_create(
-        [ItemMoodboard(
-            item=item, moodboard=moodboard
-            ) for item in items])
-    return [
-        GetItem(
-            id=item.id,
-            author=UserGet.model_validate(item.author),
-            name=item.name,
-            description=item.description,
-            item_type=item.item_type,
-            link=item.link,
-            media=item.media.split(),
-            created_at=item.created_at
-        ) for item in items
-    ]
-
-
-async def get_moodboard_items(moodboard: Moodboard) -> list[Item]:
-    return await Item.all(
-    ).select_related(
-        'item_moodboard'
-    ).select_related(
-        'author'
-    ).filter(
-        item_moodboard__moodboard=moodboard
-    )
-
-
 async def get_moodboard_with_items_and_comments(
     id: int,
     user: User
@@ -201,80 +166,3 @@ async def get_moodboard_with_items_and_comments(
         moodboard,
         await get_moodboard_items(moodboard),
         await get_moodboard_comments(moodboard))
-
-
-async def create_item(
-    author: User,
-    item: CreateItem,
-    moodboard: Moodboard | None = None,
-) -> Item:
-    if not moodboard:
-        moodboard = await Moodboard.get(author=author, is_chaotic=True)
-    created_item = await Item.create(
-        **item.model_dump(),
-        author=author,
-    )
-    await ItemMoodboard.create(
-        item=created_item,
-        moodboard=moodboard,
-    )
-    return created_item
-
-
-async def get_item(item_id: int) -> Item:
-    item = await Item.all().select_related('author').get_or_none(id=item_id)
-    if not item:
-        raise HTTPException(404)
-    return item
-
-
-async def update_item(item: Item, **kwargs) -> Item:
-    try:
-        await item.all().update(**kwargs)
-    except Exception as ex:
-        print(ex)
-    finally:
-        return await get_item(item.id)
-
-
-async def bulk_create_items(
-    user: User,
-    moodboard: Moodboard,
-    items: list[CreateItem],
-) -> list[GetItem]:
-    created_items = [
-        await create_item(user, item, moodboard) for item in items]
-    return [
-        GetItem(
-            id=item.id,
-            author=UserGet.model_validate(user),
-            name=item.name,
-            description=item.description,
-            item_type=item.item_type,
-            link=item.link,
-            media=item.media.split(),
-            created_at=item.created_at
-        ) for item in created_items
-    ]
-
-
-async def delete_item_from_moodboard(
-    user: User,
-    moodboard: Moodboard,
-    item_id: int,
-    delete_item: bool = False,
-) -> None:
-    moodboard_items_ids = await ItemMoodboard.all(
-    ).filter(
-        moodboard=moodboard
-    ).values_list('item_id', flat=True)
-
-    if item_id not in moodboard_items_ids:
-        raise HTTPException(404)
-
-    await ItemMoodboard.filter(
-        moodboard=moodboard,
-        item_id=item_id
-    ).delete()
-    if delete_item:
-        pass

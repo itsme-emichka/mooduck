@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_user_creation(client, user_data):
     response = await client.post(
-        url='/users',
+        url='/user',
         json=user_data
     )
     assert response.status_code == 200
@@ -20,7 +20,7 @@ async def test_user_creation(client, user_data):
 
 @pytest.mark.asyncio
 async def test_users_me(authenticated_client):
-    response = await authenticated_client.get('/users/me')
+    response = await authenticated_client.get('/user/me')
     assert response.status_code == 200
     assert response.json() == {
         'id': 1,
@@ -34,7 +34,7 @@ async def test_users_me(authenticated_client):
 
 @pytest.mark.asyncio
 async def test_users_me_not_auth(client):
-    response = await client.get('/users/me')
+    response = await client.get('/user/me')
     assert response.status_code == 401
 
 

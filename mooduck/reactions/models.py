@@ -20,7 +20,7 @@ class Comment(Model):
     created_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ('-created_at',)
+        ordering = ('created_at',)
 
 
 class Like(Model):
