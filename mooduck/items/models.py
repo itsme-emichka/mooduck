@@ -49,6 +49,7 @@ class Item(Model):
     link = fields.CharField(max_length=1024, null=True)
     media = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
+    is_private = fields.BooleanField(default=False)
 
     class Meta:
         ordering = ['-created_at', 'name']

@@ -13,6 +13,7 @@ def get_item_response(
         description=item.description,
         item_type=item.item_type,
         link=item.link,
+        is_private=item.is_private,
         media=item.media.split(),
         created_at=item.created_at
     )

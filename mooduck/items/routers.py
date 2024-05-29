@@ -12,7 +12,9 @@ from items.services import (
     get_moodboard_items,
     delete_item_from_moodboard as delete_item_from_moodboard_db,
     update_item,
-    get_item
+    get_item_check_authorization,
+    get_random_item,
+    get_all_items
 )
 from items.dependencies import is_item_author
 from items.utils import get_item_response, get_item_list_response
@@ -134,7 +136,9 @@ async def retrieve_moodboard_item(
     user: Annotated[User, Depends(is_authenticated)],
     item_id: int,
 ) -> GetItem:
-    return get_item_response(await get_item(item_id))
+    return get_item_response(
+        await get_item_check_authorization(user, item_id)
+    )
 
 
 @router.patch('/item/{item_id}')
@@ -149,3 +153,15 @@ async def patch_item(
     data = data.model_dump(exclude_none=True)
     updated_item = await update_item(item, data)
     return get_item_response(updated_item)
+
+
+@router.get('/item')
+async def list_items(
+    user: Annotated[User, Depends(is_authenticated)],
+    random: bool = False,
+    search: str | None = None,
+    item_type: str | None = None
+) -> list[GetItem] | GetItem:
+    if random:
+        return get_item_response(await get_random_item(item_type))
+    return get_item_list_response(await get_all_items(search, item_type))

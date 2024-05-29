@@ -11,6 +11,7 @@ class CreateItem(BaseModel):
     description: str | None = None
     item_type: str
     link: str | None = None
+    is_private: bool = False
     media: list[str] = ['']
 
     @field_validator('item_type')
@@ -29,6 +30,7 @@ class PatchItem(BaseModel):
     description: str | None = None
     item_type: str | None = None
     link: str | None = None
+    is_private: bool | None = None
     media: list[str] | None = None
 
     @field_validator('item_type')
@@ -49,6 +51,7 @@ class GetItem(BaseModel):
     description: str | None = None
     item_type: str
     link: str | None = None
+    is_private: bool = False
     media: list[str] | None = None
     created_at: datetime
 

@@ -53,7 +53,7 @@ async def get_all_moodboards(search: str | None = None) -> list[Moodboard]:
     ).filter(
         is_private=False
     ).filter(
-        Q(name__contains=search) | Q(description__contains=search)
+        Q(name__icontains=search) | Q(description__icontains=search)
     )
 
 

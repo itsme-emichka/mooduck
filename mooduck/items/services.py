@@ -1,8 +1,10 @@
 from fastapi import HTTPException
+from tortoise.contrib.postgres.functions import Random
+from tortoise.expressions import Q
 
 from moodboards.models import Moodboard
 from items.schemas import CreateItem
-from items.models import Item, ItemMoodboard
+from items.models import Item, ItemMoodboard, ITEM_TYPES
 from users.models import User
 
 
@@ -105,3 +107,73 @@ async def delete_item_from_moodboard(
     ).delete()
     if delete_item:
         pass
+
+
+async def get_item_check_authorization(user: User, item_id: int) -> Item:
+    item: Item = await get_item(item_id)
+    if item.is_private and user != item.author:
+        raise HTTPException(401)
+    return item
+
+
+async def get_random_item(item_type: str | None = None) -> Item:
+    if not item_type:
+        return await Item.filter(
+            is_private=False
+        ).select_related(
+            'author'
+        ).annotate(
+            order=Random()
+        ).order_by(
+            'order'
+        ).first()
+
+    if item_type not in ITEM_TYPES.keys():
+        raise HTTPException(404, 'incorrect item type')
+
+    return await Item.filter(
+        is_private=False
+    ).filter(
+        item_type=item_type
+    ).select_related(
+        'author'
+    ).annotate(
+        order=Random()
+    ).order_by(
+        'order'
+    ).first()
+
+
+# async def get_all_items(
+#     search: str | None = None,
+#     item_type: str | None = None
+# ) -> list[Item]:
+#     if not search:
+#         return await Item.filter(
+#             is_private=False
+#         ).select_related('author')
+#     return await Item.filter(
+#         is_private=False
+#     ).select_related(
+#         'author'
+#     ).filter(
+#         Q(name__icontains=search) | Q(description__icontains=search))
+
+
+async def get_all_items(
+    search: str | None = None,
+    item_type: str | None = None
+) -> list[Item]:
+    items = Item.filter(
+        is_private=False
+    ).select_related('author')
+    if search:
+        items = items.filter(
+            Q(name__icontains=search) | Q(description__icontains=search))
+
+    if not item_type:
+        return await items
+    if item_type not in ITEM_TYPES.keys():
+        raise HTTPException(400, 'incorrect item type')
+
+    return await items.filter(item_type=item_type)
