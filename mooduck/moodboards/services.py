@@ -12,6 +12,8 @@ from moodboards.models import (
 from moodboards.schemas import CreateItem, GetItem
 from extra.services import get_instance_or_404
 from extra.exceptions import NotAuthorized
+from reactions.models import Comment
+from reactions.services import get_moodboard_comments
 
 
 # MOODBOARD
@@ -177,8 +179,8 @@ async def add_existing_items_to_moodboard(
     ]
 
 
-async def get_moodboard_items(moodboard: Moodboard) -> list[GetItem]:
-    items = await Item.all(
+async def get_moodboard_items(moodboard: Moodboard) -> list[Item]:
+    return await Item.all(
     ).select_related(
         'item_moodboard'
     ).select_related(
@@ -187,28 +189,18 @@ async def get_moodboard_items(moodboard: Moodboard) -> list[GetItem]:
         item_moodboard__moodboard=moodboard
     )
 
-    return [
-        GetItem(
-            id=item.id,
-            author=UserGet.model_validate(item.author),
-            name=item.name,
-            description=item.description,
-            item_type=item.item_type,
-            link=item.link,
-            media=item.media.split(),
-            created_at=item.created_at
-        ) for item in items
-    ]
 
-
-async def get_moodboard_with_items(
+async def get_moodboard_with_items_and_comments(
     id: int,
     user: User
-) -> tuple[Moodboard, list[GetItem]]:
+) -> tuple[Moodboard, list[Item], list[Comment]]:
     moodboard = await get_moodboard(id)
     if moodboard.is_private and moodboard.author != user:
         raise NotAuthorized
-    return moodboard, await get_moodboard_items(moodboard)
+    return (
+        moodboard,
+        await get_moodboard_items(moodboard),
+        await get_moodboard_comments(moodboard))
 
 
 async def create_item(

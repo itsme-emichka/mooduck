@@ -22,7 +22,7 @@ from moodboards.schemas import (
 )
 from moodboards.services import (
     bulk_create_items,
-    get_moodboard_with_items as get_moodboard_with_items_db,
+    get_moodboard_with_items_and_comments,
     add_existing_items_to_moodboard,
     get_all_moodboards,
     get_moodboard_items,
@@ -42,9 +42,12 @@ from moodboards.dependencies import is_moodboard_author, is_item_author
 from extra.dependencies import is_authenticated
 from extra.services import create_instance_by_kwargs, get_instance_or_404
 from config import SLUG_PATTERN
+from reactions.routers import router as reactions_router
+from reactions.services import get_moodboard_comments
 
 
 router = APIRouter()
+router.include_router(reactions_router)
 
 
 # MOODBOARD
@@ -78,8 +81,11 @@ async def retrieve_moodboard(
     moodboard_id: int,
     user: Annotated[User, Depends(is_authenticated)]
 ) -> GetMoodboard:
-    moodboard, items = await get_moodboard_with_items_db(moodboard_id, user)
-    return get_moodboard_response(moodboard, items, moodboard.author)
+    moodboard, items, comments = await get_moodboard_with_items_and_comments(
+        moodboard_id,
+        user
+    )
+    return get_moodboard_response(moodboard, items, comments)
 
 
 @router.delete('/moodboard/{moodboard_id}')
@@ -166,7 +172,7 @@ async def retrive_chaotic(
     return get_moodboard_response(
         moodboard=moodboard,
         items=await get_moodboard_items(moodboard),
-        author=moodboard.author
+        comments=await get_moodboard_comments(moodboard)
     )
 
 
@@ -194,7 +200,7 @@ async def add_items_to_chaotic(
     return get_moodboard_response(
         moodboard,
         await get_moodboard_items(moodboard),
-        moodboard.author
+        await get_moodboard_comments(moodboard)
     )
 
 
@@ -212,7 +218,7 @@ async def delete_item_from_chaotic(
     return get_moodboard_response(
         moodboard,
         await get_moodboard_items(moodboard),
-        moodboard.author
+        await get_moodboard_comments(moodboard)
     )
 
 
@@ -245,7 +251,7 @@ async def add_items_to_moodboard(
     return get_moodboard_response(
         moodboard,
         await get_moodboard_items(moodboard),
-        moodboard.author
+        await get_moodboard_comments(moodboard)
     )
 
 
@@ -267,7 +273,7 @@ async def delete_item_from_moodboard(
     return get_moodboard_response(
         moodboard,
         await get_moodboard_items(moodboard),
-        moodboard.author
+        await get_moodboard_comments(moodboard),
     )
 
 

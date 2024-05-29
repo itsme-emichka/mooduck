@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, field_validator
 
 from users.schemas import UserGet
+from reactions.schemas import GetComment
 from moodboards.models import MOODBOARD_TYPES
 
 
@@ -89,6 +90,7 @@ class GetMoodboard(BaseModel):
     is_private: bool
     is_chaotic: bool
     created_at: datetime
+    comments: list[GetComment] | None = None
     items: list[GetItem] | None = None
 
 

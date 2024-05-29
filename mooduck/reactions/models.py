@@ -18,4 +18,19 @@ class Comment(Model):
     )
     text = fields.CharField(max_length=2048)
     created_at = fields.DatetimeField(auto_now_add=True)
-    edited_at = fields.DatetimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+
+class Like(Model):
+    id = fields.BigIntField(pk=True)
+    author = fields.ForeignKeyField(
+        'models.User',
+        related_name='like'
+    )
+    moodboard = fields.ForeignKeyField(
+        'models.Moodboard',
+        related_name='like'
+    )
+    created_at = fields.DatetimeField(auto_now_add=True)
