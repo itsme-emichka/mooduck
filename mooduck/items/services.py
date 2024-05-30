@@ -4,6 +4,7 @@ from tortoise.expressions import Q
 
 from moodboards.models import Moodboard
 from items.schemas import CreateItem
+from items.utils import get_media_from_base64_list
 from items.models import Item, ItemMoodboard, ITEM_TYPES
 from users.models import User
 
@@ -50,7 +51,12 @@ async def create_item(
     if not moodboard:
         moodboard = await Moodboard.get(author=author, is_chaotic=True)
     created_item = await Item.create(
-        **item.model_dump(),
+        name=item.name,
+        item_type=item.item_type,
+        description=item.description,
+        link=item.link,
+        is_private=item.is_private,
+        media=get_media_from_base64_list(item.media),
         author=author,
     )
     await ItemMoodboard.create(
@@ -68,6 +74,7 @@ async def get_item(item_id: int) -> Item:
 
 
 async def update_item(item: Item, data: dict) -> Item:
+    data['media'] = get_media_from_base64_list(data.get('media', None))
     try:
         item.update_from_dict(data)
         await item.save()

@@ -1,9 +1,12 @@
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import BaseModel, field_validator
+from fastapi import Query
 
 from items.models import ITEM_TYPES
 from users.schemas import UserGet
+from config import BASE64_PATTERN
 
 
 class CreateItem(BaseModel):
@@ -12,7 +15,10 @@ class CreateItem(BaseModel):
     item_type: str
     link: str | None = None
     is_private: bool = False
-    media: list[str] = ['']
+    media: Annotated[
+        list[str] | None,
+        list[Query(pattern=BASE64_PATTERN)]
+    ] = None
 
     @field_validator('item_type')
     @classmethod
