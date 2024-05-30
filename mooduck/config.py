@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -35,3 +36,11 @@ ROLE_CHOICES_PATTERN: str = r'^(admin|moder|user)$'
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 ALGORITHM = "HS256"
 TOKEN_TYPE: str = 'Bearer'
+
+# DIRS
+BASE_DIR: Path = Path(__file__).resolve().parent
+MEDIA_URL: str = 'media'
+MEDIA_ROOT: Path = BASE_DIR / MEDIA_URL
+
+# URL
+BASE_URL: str = 'http://127.0.0.1:8000'

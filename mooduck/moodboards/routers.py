@@ -35,6 +35,7 @@ from moodboards.utils import get_moodboard_response
 from moodboards.dependencies import is_moodboard_author
 from extra.dependencies import is_authenticated
 from extra.services import create_instance_by_kwargs, get_instance_or_404
+from extra.utils import save_image_from_base64
 from config import SLUG_PATTERN
 from reactions.routers import router as reactions_router
 from reactions.services import get_moodboard_comments
@@ -58,7 +59,7 @@ async def create_moodboard(
         author=user,
         name=data.name,
         description=data.description,
-        cover=data.cover,
+        cover=save_image_from_base64(data.cover),
         is_private=data.is_private,
     )
     items = []

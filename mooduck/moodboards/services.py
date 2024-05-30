@@ -10,6 +10,7 @@ from moodboards.models import (
 )
 from extra.services import get_instance_or_404
 from extra.exceptions import NotAuthorized
+from extra.utils import save_image_from_base64
 from reactions.models import Comment
 from reactions.services import get_moodboard_comments
 from items.services import get_moodboard_items
@@ -98,6 +99,8 @@ async def delete_moodboard(moodboard: Moodboard) -> None:
 
 
 async def update_moodboard(moodboard: Moodboard, data: dict) -> Moodboard:
+    if data.get('cover', None):
+        data['cover'] = save_image_from_base64(data.get('cover', None))
     try:
         moodboard.update_from_dict(data)
         await moodboard.save()

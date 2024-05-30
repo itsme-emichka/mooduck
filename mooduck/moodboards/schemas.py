@@ -1,7 +1,10 @@
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import BaseModel
+from fastapi import Query
 
+from config import BASE64_PATTERN
 from users.schemas import UserGet
 from reactions.schemas import GetComment
 from items.schemas import CreateItem, GetItem
@@ -10,7 +13,7 @@ from items.schemas import CreateItem, GetItem
 class CreateMoodboard(BaseModel):
     name: str
     description: str | None = None
-    cover: str | None = None
+    cover: Annotated[str | None, Query(pattern=BASE64_PATTERN)] = None
     is_private: bool = False
     existing_items: list[int] | None = None
     items: list[CreateItem] | None = None
@@ -20,7 +23,7 @@ class CreateMoodboard(BaseModel):
 class PatchMoodboard(BaseModel):
     name: str | None = None
     description: str | None = None
-    cover: str | None = None
+    cover: Annotated[str | None, Query(pattern=BASE64_PATTERN)] = None
     is_private: bool | None = None
 
 
