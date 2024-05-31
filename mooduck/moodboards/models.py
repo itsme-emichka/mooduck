@@ -10,6 +10,15 @@ class Moodboard(Model):
     is_private = fields.BooleanField(default=False)
     is_chaotic = fields.BooleanField(default=False)
     created_at = fields.DatetimeField(auto_now_add=True)
+    likes = fields.IntField(default=0)
+
+    async def add_like(self):
+        self.likes += 1
+        await self.save()
+
+    async def remove_like(self):
+        self.likes -= 1
+        await self.save()
 
     class Meta:
         ordering = ['-created_at', 'name']

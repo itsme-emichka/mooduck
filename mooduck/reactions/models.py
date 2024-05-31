@@ -33,4 +33,3 @@ class Like(Model):
         'models.Moodboard',
         related_name='like'
     )
-    created_at = fields.DatetimeField(auto_now_add=True)

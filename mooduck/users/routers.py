@@ -89,17 +89,17 @@ async def subscribe_on_user(
     return f'Успешно подписались на пользователя {subscribed_for.username}'
 
 
-@router.get('/sub')
-async def list_subs(
-    user: Annotated[User, Depends(is_authenticated)]
-) -> list[UserGet]:
-    return await get_user_subs(user)
-
-
-@router.delete('/sub/{user_id}')
+@router.delete('/user/{user_id}/sub')
 async def unsubscribe_from_user(
     user_id: int,
     user: Annotated[User, Depends(is_authenticated)]
 ):
     await delete_user_from_subs(user, user_id)
     return 'Успешно отписались от пользователя'
+
+
+@router.get('/sub')
+async def list_subs(
+    user: Annotated[User, Depends(is_authenticated)]
+) -> list[UserGet]:
+    return await get_user_subs(user)

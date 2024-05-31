@@ -32,6 +32,17 @@ class User(Model):
     )
     bio = fields.TextField(null=True)
 
+    async def get_liked_moodboard_ids(self):
+        return await self.all(
+        ).select_related(
+            'like'
+        ).filter(
+            like__author=self
+        ).values_list('like__moodboard_id', flat=True)
+
+    async def is_moodboard_liked(self, moodboard_id: int) -> bool:
+        return moodboard_id in await self.get_liked_moodboard_ids()
+
     def __str__(self) -> str:
         return self.username
 

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from fastapi import HTTPException
 from tortoise.expressions import Q
 from tortoise.exceptions import IntegrityError
@@ -194,3 +196,20 @@ async def get_random_moodboard() -> Moodboard:
     ).first(
     ).select_related(
         'author')
+
+
+async def get_moodboards_sorted(
+    sort: str,
+    period_from: int = 30,
+    period_to: int = 0,
+) -> list[Moodboard]:
+    period_to = datetime.now() - timedelta(days=period_to)
+    period_from = period_to - timedelta(days=period_from)
+
+    return await Moodboard.all(
+    ).select_related(
+        'author'
+    ).filter(
+        created_at__gte=period_from,
+        created_at__lte=period_to
+    ).order_by(f'-{sort}', '-created_at')

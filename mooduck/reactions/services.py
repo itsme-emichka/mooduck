@@ -1,9 +1,10 @@
 from fastapi import HTTPException
 from tortoise.exceptions import IntegrityError
 
-from reactions.models import Comment
+from reactions.models import Comment, Like
 from moodboards.models import Moodboard
 from users.models import User
+from extra.services import get_instance_or_404
 
 
 async def get_moodboard_comments(moodboard: Moodboard) -> list[Comment]:
@@ -60,3 +61,27 @@ async def update_comment(comment: Comment, text: str) -> Comment:
 
 async def delete_comment(comment: Comment) -> None:
     await comment.delete()
+
+
+async def like_moodboard(user: User, moodboard_id: int):
+    moodboard: Moodboard = await get_instance_or_404(
+        Moodboard,
+        id=moodboard_id,
+    )
+    like, is_created = await Like.get_or_create(
+        author=user, moodboard=moodboard)
+    if not is_created:
+        raise HTTPException(400, 'already exists')
+    await moodboard.add_like()
+
+
+async def dislike_moodboard(user: User, moodboard_id: int):
+    moodboard: Moodboard = await get_instance_or_404(
+        Moodboard,
+        id=moodboard_id,
+    )
+    like = await Like.get_or_none(author=user, moodboard=moodboard)
+    if not like:
+        raise HTTPException(404)
+    await moodboard.remove_like()
+    await like.delete()

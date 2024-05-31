@@ -36,6 +36,8 @@ class GetMoodboard(BaseModel):
     is_private: bool
     is_chaotic: bool
     created_at: datetime
+    likes: int = 0
+    is_liked: bool = False
     comments: list[GetComment] | None = None
     items: list[GetItem] | None = None
 
@@ -49,3 +51,5 @@ class ListMoodboard(BaseModel):
     created_at: datetime
     is_private: bool
     is_chaotic: bool
+    likes: int = 0
+    is_liked: bool = False

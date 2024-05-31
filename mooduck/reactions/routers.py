@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
 
 from users.models import User
-from moodboards.schemas import GetMoodboard
 from moodboards.services import (
     get_moodboard,
 )
@@ -14,7 +13,9 @@ from reactions.services import (
     get_moodboard_comments,
     get_comment,
     update_comment,
-    delete_comment as delete_comment_db
+    delete_comment as delete_comment_db,
+    like_moodboard as like_moodboard_db,
+    dislike_moodboard as dislike_moodboard_db
 )
 from reactions.utils import get_comment_list_response, get_comment_response
 from reactions.models import Comment
@@ -85,7 +86,7 @@ async def answer_to_another_comment(
     moodboard_id: int,
     comment_id: int,
     data: CreateComment,
-) -> GetMoodboard:
+) -> list[GetComment]:
     moodboard = await get_moodboard(moodboard_id)
     comment = await get_comment(id=comment_id)
 
@@ -96,3 +97,21 @@ async def answer_to_another_comment(
         answering_to=comment
     )
     return get_comment_list_response(await get_moodboard_comments(moodboard))
+
+
+@router.post('/moodboard/{moodboard_id}/like')
+async def like_moodboard(
+    moodboard_id: int,
+    user: Annotated[User, Depends(is_authenticated)],
+):
+    await like_moodboard_db(user, moodboard_id)
+    return
+
+
+@router.delete('/moodboard/{moodboard_id}/like')
+async def dislike_moodboard(
+    moodboard_id: int,
+    user: Annotated[User, Depends(is_authenticated)]
+):
+    await dislike_moodboard_db(user, moodboard_id)
+    return

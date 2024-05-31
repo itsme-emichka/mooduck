@@ -7,6 +7,11 @@ from extra.utils import save_image_from_base64
 def get_item_response(
     item: Item
 ) -> GetItem:
+    media = item.media
+    if not media:
+        media = []
+    else:
+        media = media.split()
     return GetItem(
         id=item.id,
         author=UserGet.model_validate(item.author),
@@ -15,7 +20,7 @@ def get_item_response(
         item_type=item.item_type,
         link=item.link,
         is_private=item.is_private,
-        media=item.media.split(),
+        media=media,
         created_at=item.created_at
     )
 

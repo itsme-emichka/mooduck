@@ -29,7 +29,8 @@ from moodboards.services import (
     remove_moodboard_from_fav,
     get_user_moodboards,
     get_user_subs_moodboards,
-    get_random_moodboard
+    get_random_moodboard,
+    get_moodboards_sorted
 )
 from moodboards.utils import get_moodboard_response
 from moodboards.dependencies import is_moodboard_author
@@ -71,7 +72,7 @@ async def create_moodboard(
             moodboard
         )
         items.extend(existing_items)
-    return get_moodboard_response(moodboard, items, [])
+    return get_moodboard_response(moodboard, items, [], False)
 
 
 @router.get('/moodboard/{moodboard_id}')
@@ -83,7 +84,12 @@ async def retrieve_moodboard(
         moodboard_id,
         user
     )
-    return get_moodboard_response(moodboard, items, comments)
+    return get_moodboard_response(
+        moodboard,
+        items,
+        comments,
+        await user.is_moodboard_liked(moodboard_id)
+    )
 
 
 @router.delete('/moodboard/{moodboard_id}')
@@ -93,7 +99,7 @@ async def delete_moodboard(
         tuple[User, Moodboard],
         Depends(is_moodboard_author)
     ],
-) -> None:
+):
     user, moodboard = user_moodboard
     await delete_moodboard_db(moodboard)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -114,7 +120,8 @@ async def patch_moodboard(
     return get_moodboard_response(
         moodboard,
         await get_moodboard_items(moodboard),
-        await get_moodboard_comments(moodboard)
+        await get_moodboard_comments(moodboard),
+        await user.is_moodboard_liked(moodboard_id)
     )
 
 
@@ -123,25 +130,32 @@ async def list_moodboards(
     user: Annotated[User, Depends(is_authenticated)],
     username: Annotated[str | None, Query(pattern=SLUG_PATTERN)] = None,
     random: bool = False,
-    search: str | None = None
+    search: str | None = None,
+    period_from: int = 30,
+    period_to: int = 0,
+    sort: Annotated[str, Query(pattern=r'^(created_at|likes)$')] = 'created_at'
 ) -> list[ListMoodboard] | GetMoodboard:
     if random:
         moodboard = await get_random_moodboard()
         return get_moodboard_response(
             moodboard,
             await get_moodboard_items(moodboard),
-            await get_moodboard_comments(moodboard)
+            await get_moodboard_comments(moodboard),
+            await user.is_moodboard_liked(moodboard.id)
         )
 
     if not username:
-        return await get_all_moodboards(search)
+        if search:
+            return await get_all_moodboards(search)
+        if bool(period_from) or bool(period_to) or bool(sort):
+            return await get_moodboards_sorted(sort, period_from, period_to)
 
     if username == 'slf':
         return await get_user_moodboards(user=user, include_private=True)
-    user = await get_instance_or_404(User, username=username)
-    if not user:
+    search_user = await get_instance_or_404(User, username=username)
+    if not search_user:
         raise HTTPException(404, 'Пользователь не найден')
-    return await get_user_moodboards(user)
+    return await get_user_moodboards(search_user)
 
 
 # FAV
@@ -156,16 +170,15 @@ async def list_fav_moodboard(
 async def add_moodboard_to_favorite(
     moodboard_id: int,
     user: Annotated[User, Depends(is_authenticated)],
-) -> Response:
+):
     await add_moodboard_to_favorite_db(user, moodboard_id)
-    return Response(status_code=200)
 
 
-@router.delete('/fav/{moodboard_id}')
+@router.delete('/moodboard/{moodboard_id}/fav')
 async def delete_moodboard_from_fav(
     moodboard_id: int,
     user: Annotated[User, Depends(is_authenticated)]
-) -> Response:
+):
     await remove_moodboard_from_fav(user, moodboard_id)
 
 
@@ -183,7 +196,8 @@ async def retrive_chaotic(
 ) -> GetMoodboard:
     moodboard = await get_chaotic(user)
     return get_moodboard_response(
-        moodboard=moodboard,
-        items=await get_moodboard_items(moodboard),
-        comments=await get_moodboard_comments(moodboard)
+        moodboard,
+        await get_moodboard_items(moodboard),
+        await get_moodboard_comments(moodboard),
+        False
     )
