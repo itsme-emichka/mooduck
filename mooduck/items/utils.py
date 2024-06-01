@@ -33,5 +33,5 @@ def get_item_list_response(
 
 def get_media_from_base64_list(images: list[str] | None) -> str:
     if not images:
-        return None
+        return ''
     return ' '.join([save_image_from_base64(image) for image in images])

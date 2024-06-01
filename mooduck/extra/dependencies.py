@@ -17,7 +17,7 @@ async def is_authenticated(token: Annotated[str, Depends(oauth)]) -> User:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get('sub')
         if not username:
-            raise HTTPException(status_code=404)
+            raise HTTPException(status_code=401)
     except JWTError:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=401)
     return await get_instance_or_404(User, username=username)

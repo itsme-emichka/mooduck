@@ -19,8 +19,8 @@ async def test_user_creation(client, user_data):
 
 
 @pytest.mark.asyncio
-async def test_users_me(authenticated_client):
-    response = await authenticated_client.get('/user/me')
+async def test_users_me(user_client):
+    response = await user_client.get('/user/me')
     assert response.status_code == 200
     assert response.json() == {
         'id': 1,

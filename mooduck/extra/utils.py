@@ -33,7 +33,7 @@ def create_access_token(
 
 def save_image_from_base64(base64_data: str) -> str:
     if not base64_data:
-        return None
+        return ''
     format, imgstr = base64_data.split(';base64,')
     ext = format.split('/')[-1]
     img_name = sha256(imgstr.encode()).hexdigest()
@@ -43,5 +43,5 @@ def save_image_from_base64(base64_data: str) -> str:
             file.write(base64.b64decode(imgstr))
         except Exception as ex:
             print(ex)
-            return None
+            return ''
     return image_url
