@@ -160,10 +160,10 @@ async def test_list_moodboard(user_client, moodboards):
     response = await user_client.get('/moodboard')
     print(response.json())
     assert response.status_code == 200
-    assert response.json()[0].get('id') == fourth_mb.id
-    assert response.json()[1].get('id') == third_mb.id
-    assert response.json()[2].get('id') == second_mb.id
-    assert len(response.json()) == 3
+    assert response.json().get('items')[0].get('id') == fourth_mb.id
+    assert response.json().get('items')[1].get('id') == third_mb.id
+    assert response.json().get('items')[2].get('id') == second_mb.id
+    assert len(response.json().get('items')) == 3
 
 
 async def test_list_moodboard_week(user_client, moodboards):
@@ -171,9 +171,9 @@ async def test_list_moodboard_week(user_client, moodboards):
     response = await user_client.get('/moodboard?period_from=7')
     pprint(response.json())
     assert response.status_code == 200
-    assert response.json()[0].get('id') == fourth_mb.id
-    assert response.json()[1].get('id') == third_mb.id
-    assert len(response.json()) == 2
+    assert response.json().get('items')[0].get('id') == fourth_mb.id
+    assert response.json().get('items')[1].get('id') == third_mb.id
+    assert len(response.json().get('items')) == 2
 
 
 async def test_list_moodboard_day(user_client, moodboards):
@@ -181,8 +181,8 @@ async def test_list_moodboard_day(user_client, moodboards):
     response = await user_client.get('/moodboard?period_from=1')
     pprint(response.json())
     assert response.status_code == 200
-    assert response.json()[0].get('id') == fourth_mb.id
-    assert len(response.json()) == 1
+    assert response.json().get('items')[0].get('id') == fourth_mb.id
+    assert len(response.json().get('items')) == 1
 
 
 async def test_list_moodboard_by_likes(user_client, moodboards):
@@ -190,42 +190,43 @@ async def test_list_moodboard_by_likes(user_client, moodboards):
     response = await user_client.get('/moodboard?sort=likes')
     print(response.json())
     assert response.status_code == 200
-    assert response.json()[0].get('id') == second_mb.id
-    assert response.json()[1].get('id') == third_mb.id
-    assert response.json()[2].get('id') == fourth_mb.id
+    assert response.json().get('items')[0].get('id') == second_mb.id
+    assert response.json().get('items')[1].get('id') == third_mb.id
+    assert response.json().get('items')[2].get('id') == fourth_mb.id
 
 
-async def test_user_moodboards(user_client, author_client, moodboards):
+async def test_user_moodboards(user_client, author, moodboards):
     first_mb, second_mb, third_mb, fourth_mb = moodboards
-    response = await user_client.get('/moodboard?username=author')
+    response = await user_client.get(f'/user/{author.id}/moodboard')
     assert response.status_code == 200
-    assert len(response.json()) == 4
+    assert len(response.json().get('items')) == 4
 
 
 async def test_user_moodboards_slf(author_client, moodboards):
     first_mb, second_mb, third_mb, fourth_mb = moodboards
-    response = await author_client.get('/moodboard?username=slf')
+    response = await author_client.get('/user/me/moodboard')
     assert response.status_code == 200
-    assert len(response.json()) == 4
+    assert len(response.json().get('items')) == 4
 
 
 async def test_user_moodboards_slf_empty(user_client, moodboards):
     first_mb, second_mb, third_mb, fourth_mb = moodboards
-    response = await user_client.get('/moodboard?username=slf')
+    response = await user_client.get('/user/me/moodboard')
     assert response.status_code == 200
-    assert len(response.json()) == 0
+    assert len(response.json().get('items')) == 0
 
 
 async def test_search_moodboard(user_client, moodboards):
     first_mb, second_mb, third_mb, fourth_mb = moodboards
-    response = await user_client.get(f'/moodboard?search={first_mb.name}')
+    response = await user_client.get(f'/moodboard?search={fourth_mb.name}')
+    pprint(response.json())
     assert response.status_code == 200
-    assert response.json()[0].get('id') == first_mb.id
+    assert response.json().get('items')[0].get('id') == fourth_mb.id
 
 
 async def test_random_moodboard(user_client, moodboards):
     first_mb, second_mb, third_mb, fourth_mb = moodboards
-    response = await user_client.get('/moodboard?random=true')
+    response = await user_client.get('/random_moodboard')
     assert response.status_code == 200
     assert response.json().get('id') in (
         first_mb.id,
@@ -239,8 +240,8 @@ async def test_user_fav_moodboards(user_fav_moodboard, user_client):
     user, moodboard = user_fav_moodboard
     response = await user_client.get('/fav')
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0].get('id') == moodboard.id
+    assert len(response.json().get('items')) == 1
+    assert response.json().get('items')[0].get('id') == moodboard.id
 
 
 async def test_moodboard_add_to_fav(user_client, moodboard):
@@ -248,8 +249,8 @@ async def test_moodboard_add_to_fav(user_client, moodboard):
     assert response.status_code == 200
     response = await user_client.get('/fav')
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0].get('id') == moodboard.id
+    assert len(response.json().get('items')) == 1
+    assert response.json().get('items')[0].get('id') == moodboard.id
 
 
 async def test_delete_moodboard_from_fav(user_fav_moodboard, user_client):
@@ -257,7 +258,7 @@ async def test_delete_moodboard_from_fav(user_fav_moodboard, user_client):
     response = await user_client.delete(f'/moodboard/{moodboard.id}/fav')
     assert response.status_code == 200
     response = await user_client.get('/fav')
-    assert len(response.json()) == 0
+    assert len(response.json().get('items')) == 0
 
 
 async def test_delete_moodboard_from_fav_404(user_fav_moodboard, user_client):
@@ -265,14 +266,14 @@ async def test_delete_moodboard_from_fav_404(user_fav_moodboard, user_client):
     response = await user_client.delete(f'/moodboard/{moodboard.id + 1}/fav')
     assert response.status_code == 404
     response = await user_client.get('/fav')
-    assert response.json()[0].get('id') == moodboard.id
+    assert response.json().get('items')[0].get('id') == moodboard.id
 
 
 async def test_sub_moodboards(user_sub_author, user_client):
     user, author, moodboards = user_sub_author
     response = await user_client.get('/sub/moodboard')
     assert response.status_code == 200
-    assert len(response.json()) == 4
+    assert len(response.json().get('items')) == 4
 
 
 async def test_user_chaotic(user_with_chaotic, user_client):

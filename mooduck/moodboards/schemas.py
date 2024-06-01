@@ -53,3 +53,6 @@ class ListMoodboard(BaseModel):
     is_chaotic: bool
     likes: int = 0
     is_liked: bool = False
+
+    class Config:
+        from_attributes = True

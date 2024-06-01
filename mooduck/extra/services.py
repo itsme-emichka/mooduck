@@ -1,4 +1,4 @@
-from tortoise.queryset import QuerySetSingle
+from tortoise.queryset import QuerySetSingle, QuerySet
 from tortoise import Model
 from tortoise.exceptions import IntegrityError
 from fastapi import HTTPException, status
@@ -23,3 +23,11 @@ async def create_instance_by_kwargs(model: Model, **kwargs) -> QuerySetSingle:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Already exists'
         )
+
+
+async def paginate_queryset(
+    queryset: QuerySet,
+    limit: int = 50,
+    offset: int = 0
+) -> list[Model]:
+    return await queryset.limit(limit).offset(offset)

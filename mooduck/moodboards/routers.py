@@ -3,10 +3,9 @@ from typing import Annotated
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     status,
     Response,
-    Query
+    Query,
 )
 
 from users.models import User
@@ -19,7 +18,6 @@ from moodboards.schemas import (
 )
 from moodboards.services import (
     get_moodboard_with_items_and_comments,
-    get_all_moodboards,
     get_moodboard_items,
     get_chaotic,
     delete_moodboard as delete_moodboard_db,
@@ -30,14 +28,14 @@ from moodboards.services import (
     get_user_moodboards,
     get_user_subs_moodboards,
     get_random_moodboard,
-    get_moodboards_sorted
+    get_moodboards
 )
 from moodboards.utils import get_moodboard_response
 from moodboards.dependencies import is_moodboard_author
-from extra.dependencies import is_authenticated
+from extra.dependencies import is_authenticated, pagination
 from extra.services import create_instance_by_kwargs, get_instance_or_404
 from extra.utils import save_image_from_base64
-from config import SLUG_PATTERN
+from extra.schemas import Pagination
 from reactions.routers import router as reactions_router
 from reactions.services import get_moodboard_comments
 from items.routers import router as items_router
@@ -125,45 +123,66 @@ async def patch_moodboard(
     )
 
 
+@router.get('/random_moodboard')
+async def retrieve_random_moodboard(
+    user: Annotated[User, Depends(is_authenticated)],
+) -> GetMoodboard:
+    moodboard = await get_random_moodboard()
+    return get_moodboard_response(
+        moodboard,
+        await get_moodboard_items(moodboard),
+        await get_moodboard_comments(moodboard),
+        await user.is_moodboard_liked(moodboard.id)
+    )
+
+
 @router.get('/moodboard')
 async def list_moodboards(
     user: Annotated[User, Depends(is_authenticated)],
-    username: Annotated[str | None, Query(pattern=SLUG_PATTERN)] = None,
-    random: bool = False,
+    paginator=Depends(pagination),
     search: str | None = None,
     period_from: int = 30,
     period_to: int = 0,
-    sort: Annotated[str, Query(pattern=r'^(created_at|likes)$')] = 'created_at'
-) -> list[ListMoodboard] | GetMoodboard:
-    if random:
-        moodboard = await get_random_moodboard()
-        return get_moodboard_response(
-            moodboard,
-            await get_moodboard_items(moodboard),
-            await get_moodboard_comments(moodboard),
-            await user.is_moodboard_liked(moodboard.id)
-        )
+    sort: Annotated[
+        str, Query(pattern=r'^(created_at|likes)$')
+    ] = 'created_at',
+) -> Pagination:
+    queryset = get_moodboards(
+        search=search,
+        sort=sort,
+        period_from=period_from,
+        period_to=period_to
+    )
+    return await paginator(queryset, ListMoodboard)
 
-    if not username:
-        if search:
-            return await get_all_moodboards(search)
-        if bool(period_from) or bool(period_to) or bool(sort):
-            return await get_moodboards_sorted(sort, period_from, period_to)
 
-    if username == 'slf':
-        return await get_user_moodboards(user=user, include_private=True)
-    search_user = await get_instance_or_404(User, username=username)
-    if not search_user:
-        raise HTTPException(404, 'Пользователь не найден')
-    return await get_user_moodboards(search_user)
+@router.get('/user/me/moodboard')
+async def retrieve_self_moodboards(
+    user: Annotated[User, Depends(is_authenticated)],
+    paginator=Depends(pagination)
+) -> Pagination:
+    return await paginator(get_user_moodboards(user, True), ListMoodboard)
+
+
+@router.get('/user/{user_id}/moodboard')
+async def list_user_moodboards(
+    user_id: int,
+    user: Annotated[User, Depends(is_authenticated)],
+    paginator=Depends(pagination)
+) -> Pagination:
+    return await paginator(
+        get_user_moodboards(await get_instance_or_404(User, id=user_id)),
+        ListMoodboard
+    )
 
 
 # FAV
 @router.get('/fav')
 async def list_fav_moodboard(
-    user: Annotated[User, Depends(is_authenticated)]
-) -> list[ListMoodboard]:
-    return await get_user_fav_moodboards(user)
+    user: Annotated[User, Depends(is_authenticated)],
+    paginator=Depends(pagination)
+) -> Pagination:
+    return await paginator(get_user_fav_moodboards(user), ListMoodboard)
 
 
 @router.post('/moodboard/{moodboard_id}/fav')
@@ -185,8 +204,9 @@ async def delete_moodboard_from_fav(
 @router.get('/sub/moodboard')
 async def get_subs_moodboards(
     user: Annotated[User, Depends(is_authenticated)],
-) -> list[ListMoodboard]:
-    return await get_user_subs_moodboards(user)
+    paginator=Depends(pagination)
+) -> Pagination:
+    return await paginator(await get_user_subs_moodboards(user), ListMoodboard)
 
 
 # CHAOTIC

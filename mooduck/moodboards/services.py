@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from tortoise.expressions import Q
-from tortoise.exceptions import IntegrityError
 from tortoise.contrib.postgres.functions import Random
+from tortoise.queryset import QuerySet
 
 from users.models import User
 from moodboards.models import (
@@ -42,40 +42,17 @@ async def get_moodboard_check_authorization(id: int, user: User) -> Moodboard:
     return moodboard
 
 
-async def get_all_moodboards(search: str | None = None) -> list[Moodboard]:
-    if not search:
-        return await Moodboard.all(
-        ).select_related(
-            'author'
-        ).filter(
-            is_private=False
-        )
-    return await Moodboard.all(
-    ).select_related(
-        'author'
-    ).filter(
-        is_private=False
-    ).filter(
-        Q(name__icontains=search) | Q(description__icontains=search)
-    )
-
-
-async def get_user_moodboards(
+def get_user_moodboards(
     user: User,
     include_private: bool = False
-) -> list[Moodboard]:
-    try:
-        if include_private:
-            return await Moodboard.all(
-            ).select_related(
-                'author'
-            ).filter(author=user)
-        return await Moodboard.all(
-        ).select_related(
-            'author'
-        ).filter(author=user, is_private=False)
-    except IntegrityError:
-        raise HTTPException(404, 'Пользователь не найден')
+) -> QuerySet[Moodboard]:
+    base_query = Moodboard.all(
+    ).select_related(
+        'author'
+    ).filter(author=user)
+    if not include_private:
+        base_query = base_query.filter(is_private=False)
+    return base_query
 
 
 async def get_chaotic(user: User) -> Moodboard:
@@ -113,8 +90,8 @@ async def update_moodboard(moodboard: Moodboard, data: dict) -> Moodboard:
 
 
 # FAV
-async def get_user_fav_moodboards(user: User) -> list[Moodboard]:
-    return await Moodboard.all(
+def get_user_fav_moodboards(user: User) -> QuerySet[Moodboard]:
+    return Moodboard.all(
     ).select_related(
         'fav_moodboard'
     ).select_related(
@@ -151,10 +128,9 @@ async def remove_moodboard_from_fav(user: User, moodboard_id: int) -> None:
         moodboard_id=moodboard_id
     )
     await instance.all().delete()
-    return
 
 
-async def get_user_subs_moodboards(user: User) -> list[Moodboard]:
+async def get_user_subs_moodboards(user: User) -> QuerySet[Moodboard]:
     subscriptions = await User.all(
     ).select_related(
         'subscribed_for'
@@ -162,7 +138,7 @@ async def get_user_subs_moodboards(user: User) -> list[Moodboard]:
         subscribed_for__subscriber=user
     ).values_list('id', flat=True)
 
-    moodboards = await Moodboard.all(
+    moodboards = Moodboard.all(
     ).select_related(
         'author'
     ).filter(
@@ -198,18 +174,27 @@ async def get_random_moodboard() -> Moodboard:
         'author')
 
 
-async def get_moodboards_sorted(
-    sort: str,
+def get_moodboards(
+    search: str | None,
+    sort: str = 'created_at',
     period_from: int = 30,
     period_to: int = 0,
-) -> list[Moodboard]:
+) -> QuerySet[Moodboard]:
     period_to = datetime.now() - timedelta(days=period_to)
     period_from = period_to - timedelta(days=period_from)
 
-    return await Moodboard.all(
+    base_query = Moodboard.all(
     ).select_related(
         'author'
     ).filter(
         created_at__gte=period_from,
         created_at__lte=period_to
-    ).order_by(f'-{sort}', '-created_at')
+    ).order_by(
+        f'-{sort}',
+        '-created_at'
+    )
+    if search:
+        base_query = base_query.filter(
+            Q(name__icontains=search) | Q(description__icontains=search)
+        )
+    return base_query
