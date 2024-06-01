@@ -54,6 +54,11 @@ async def test_retrieve_moodboard(moodboard_item_comment, user_client):
     assert bool(response.json().get('comments')) is True
 
 
+async def test_retrieve_private_moodboard(user_client, private_moodboard):
+    response = await user_client.get(f'/moodboard/{private_moodboard.id}')
+    assert response.status_code == 401
+
+
 async def test_retrieve_moodboard_404(moodboard_item_comment, user_client):
     moodboard, item, comment = moodboard_item_comment
     response = await user_client.get(f'/moodboard/{moodboard.id + 1}')

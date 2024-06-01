@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 from users.models import User
 from extra.dependencies import is_authenticated
@@ -71,11 +71,7 @@ async def delete_item_from_chaotic(
         moodboard=moodboard,
         item_id=item_id,
     )
-    return get_moodboard_response(
-        moodboard,
-        await get_moodboard_items(moodboard),
-        await get_moodboard_comments(moodboard)
-    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post('/moodboard/{moodboard_id}/item')
@@ -128,7 +124,7 @@ async def delete_item_from_moodboard(
         moodboard=moodboard,
         item_id=item_id,
     )
-    return
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get('/item/{item_id}')
