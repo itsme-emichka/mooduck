@@ -13,9 +13,10 @@ from users.services import (
     get_all_users
 )
 from moodboards.models import Moodboard
-from extra.services import (create_instance_by_kwargs, get_instance_or_404)
+from extra.services import create_instance_by_kwargs, get_instance_or_404
 from extra.utils import get_password_hash, create_access_token
-from extra.dependencies import is_authenticated
+from extra.dependencies import is_authenticated, pagination
+from extra.schemas import Pagination
 
 
 router = APIRouter()
@@ -47,9 +48,10 @@ async def create_new_user(user_data: UserCreate) -> UserGet:
 @router.get('/user')
 async def list_user(
     user: Annotated[User, Depends(is_authenticated)],
+    paginator=Depends(pagination),
     search: str | None = None
-) -> list[UserGet]:
-    return await get_all_users(search)
+) -> Pagination:
+    return await paginator(get_all_users(search), UserGet)
 
 
 @router.post('/auth')
@@ -100,6 +102,7 @@ async def unsubscribe_from_user(
 
 @router.get('/sub')
 async def list_subs(
-    user: Annotated[User, Depends(is_authenticated)]
-) -> list[UserGet]:
-    return await get_user_subs(user)
+    user: Annotated[User, Depends(is_authenticated)],
+    paginator=Depends(pagination),
+) -> Pagination:
+    return await paginator(get_user_subs(user), UserGet)

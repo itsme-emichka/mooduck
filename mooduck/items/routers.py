@@ -3,7 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 from users.models import User
-from extra.dependencies import is_authenticated
+from extra.dependencies import is_authenticated, pagination
+from extra.schemas import Pagination
 from items.models import Item
 from items.schemas import AddItemsToMoodboard, PatchItem, GetItem
 from items.services import (
@@ -154,10 +155,20 @@ async def patch_item(
 @router.get('/item')
 async def list_items(
     user: Annotated[User, Depends(is_authenticated)],
-    random: bool = False,
+    paginator=Depends(pagination),
     search: str | None = None,
     item_type: str | None = None
-) -> list[GetItem] | GetItem:
-    if random:
-        return get_item_response(await get_random_item(item_type))
-    return get_item_list_response(await get_all_items(search, item_type))
+) -> Pagination:
+    return await paginator(
+        get_all_items(search, item_type),
+        GetItem,
+        get_item_response
+    )
+
+
+@router.get('/random/item')
+async def retrieve_random_item(
+    user: Annotated[User, Depends(is_authenticated)],
+    item_type: str | None = None
+) -> GetItem:
+    return get_item_response(await get_random_item(item_type))

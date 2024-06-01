@@ -226,7 +226,7 @@ async def test_search_moodboard(user_client, moodboards):
 
 async def test_random_moodboard(user_client, moodboards):
     first_mb, second_mb, third_mb, fourth_mb = moodboards
-    response = await user_client.get('/random_moodboard')
+    response = await user_client.get('random/moodboard')
     assert response.status_code == 200
     assert response.json().get('id') in (
         first_mb.id,

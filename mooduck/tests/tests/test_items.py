@@ -205,7 +205,7 @@ async def test_retrieve_private_item_401(
 
 async def test_random_item(user_client, items):
     first_item, second_item, third_item, fourth_item = items
-    response = await user_client.get('/item?random=true')
+    response = await user_client.get('/random/item')
     assert response.status_code == 200
     assert response.json().get('id') in (
         first_item.id,

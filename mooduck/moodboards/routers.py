@@ -123,7 +123,7 @@ async def patch_moodboard(
     )
 
 
-@router.get('/random_moodboard')
+@router.get('/random/moodboard')
 async def retrieve_random_moodboard(
     user: Annotated[User, Depends(is_authenticated)],
 ) -> GetMoodboard:

@@ -151,7 +151,7 @@ async def get_random_item(item_type: str | None = None) -> Item:
     ).first()
 
 
-async def get_all_items(
+def get_all_items(
     search: str | None = None,
     item_type: str | None = None
 ) -> list[Item]:
@@ -163,8 +163,8 @@ async def get_all_items(
             Q(name__icontains=search) | Q(description__icontains=search))
 
     if not item_type:
-        return await items
+        return items
     if item_type not in ITEM_TYPES.keys():
         raise HTTPException(400, 'incorrect item type')
 
-    return await items.filter(item_type=item_type)
+    return items.filter(item_type=item_type)

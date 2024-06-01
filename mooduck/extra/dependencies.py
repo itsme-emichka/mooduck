@@ -1,9 +1,10 @@
-from typing import Annotated
+from typing import Annotated, Callable
 
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, Request, Query
 from jose import jwt, JWTError
 from tortoise.queryset import QuerySet
+from tortoise import Model
 from pydantic import BaseModel
 
 from config import SECRET_KEY, ALGORITHM
@@ -30,14 +31,21 @@ async def pagination(
     request: Request,
     limit: Annotated[int, Query(ge=1)] = 30,
     page: Annotated[int, Query(ge=1)] = 1,
-):
+) -> Callable[
+    [QuerySet, BaseModel, Callable[[Model], BaseModel]],
+    Pagination
+]:
     base_url = str(request.base_url)[:-1]
     path = str(request.url.path)
     query = str(request.url.remove_query_params(('limit', 'page')).query)
 
     url = f'{base_url}{path}'
 
-    async def get_paginated_response(queryset: QuerySet, schema: BaseModel):
+    async def get_paginated_response(
+        queryset: QuerySet,
+        schema: BaseModel,
+        func_to_validate: Callable[[Model], BaseModel] = None
+    ):
         prev_page = f'{url}?limit={limit}&page={page - 1}&{query}'
         if page == 1:
             prev_page = None
@@ -52,6 +60,16 @@ async def pagination(
         if len(items) > limit:
             next_page = f'{url}?limit={limit}&page={page + 1}&{query}'
             items = items[:-1]
+
+        if func_to_validate:
+            return Pagination(
+                page=page,
+                limit=limit,
+                prev_page=prev_page,
+                next_page=next_page,
+                amount=len(items),
+                items=[func_to_validate(item) for item in items]
+            )
 
         return Pagination(
             page=page,
