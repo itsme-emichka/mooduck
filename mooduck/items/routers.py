@@ -4,9 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 from users.models import User
 from extra.dependencies import is_authenticated, pagination
-from extra.schemas import Pagination
 from items.models import Item
-from items.schemas import AddItemsToMoodboard, PatchItem, GetItem
+from items.schemas import (
+    AddItemsToMoodboard,
+    PatchItem,
+    GetItem,
+    PaginatedItem
+)
 from items.services import (
     bulk_create_items,
     add_existing_items_to_moodboard,
@@ -158,7 +162,7 @@ async def list_items(
     paginator=Depends(pagination),
     search: str | None = None,
     item_type: str | None = None
-) -> Pagination:
+) -> PaginatedItem:
     return await paginator(
         get_all_items(search, item_type),
         GetItem,

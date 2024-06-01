@@ -8,6 +8,7 @@ from config import BASE64_PATTERN
 from users.schemas import UserGet
 from reactions.schemas import GetComment
 from items.schemas import CreateItem, GetItem
+from extra.schemas import Pagination
 
 
 class CreateMoodboard(BaseModel):
@@ -56,3 +57,7 @@ class ListMoodboard(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PaginatedMoodboard(Pagination):
+    items: list[ListMoodboard]

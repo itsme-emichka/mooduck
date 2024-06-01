@@ -14,7 +14,8 @@ from moodboards.schemas import (
     CreateMoodboard,
     GetMoodboard,
     PatchMoodboard,
-    ListMoodboard
+    ListMoodboard,
+    PaginatedMoodboard
 )
 from moodboards.services import (
     get_moodboard_with_items_and_comments,
@@ -35,7 +36,6 @@ from moodboards.dependencies import is_moodboard_author
 from extra.dependencies import is_authenticated, pagination
 from extra.services import create_instance_by_kwargs, get_instance_or_404
 from extra.utils import save_image_from_base64
-from extra.schemas import Pagination
 from reactions.routers import router as reactions_router
 from reactions.services import get_moodboard_comments
 from items.routers import router as items_router
@@ -146,7 +146,7 @@ async def list_moodboards(
     sort: Annotated[
         str, Query(pattern=r'^(created_at|likes)$')
     ] = 'created_at',
-) -> Pagination:
+) -> PaginatedMoodboard:
     queryset = get_moodboards(
         search=search,
         sort=sort,
@@ -160,7 +160,7 @@ async def list_moodboards(
 async def retrieve_self_moodboards(
     user: Annotated[User, Depends(is_authenticated)],
     paginator=Depends(pagination)
-) -> Pagination:
+) -> PaginatedMoodboard:
     return await paginator(get_user_moodboards(user, True), ListMoodboard)
 
 
@@ -169,7 +169,7 @@ async def list_user_moodboards(
     user_id: int,
     user: Annotated[User, Depends(is_authenticated)],
     paginator=Depends(pagination)
-) -> Pagination:
+) -> PaginatedMoodboard:
     return await paginator(
         get_user_moodboards(await get_instance_or_404(User, id=user_id)),
         ListMoodboard
@@ -181,7 +181,7 @@ async def list_user_moodboards(
 async def list_fav_moodboard(
     user: Annotated[User, Depends(is_authenticated)],
     paginator=Depends(pagination)
-) -> Pagination:
+) -> PaginatedMoodboard:
     return await paginator(get_user_fav_moodboards(user), ListMoodboard)
 
 
@@ -205,7 +205,7 @@ async def delete_moodboard_from_fav(
 async def get_subs_moodboards(
     user: Annotated[User, Depends(is_authenticated)],
     paginator=Depends(pagination)
-) -> Pagination:
+) -> PaginatedMoodboard:
     return await paginator(await get_user_subs_moodboards(user), ListMoodboard)
 
 

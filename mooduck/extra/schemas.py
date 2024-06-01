@@ -1,5 +1,3 @@
-from typing import Any
-
 from pydantic import BaseModel
 
 
@@ -9,4 +7,4 @@ class Pagination(BaseModel):
     prev_page: str | None
     next_page: str | None
     amount: int
-    items: list[Any] = []
+    items: list[BaseModel] = []

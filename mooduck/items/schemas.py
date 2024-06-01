@@ -7,6 +7,7 @@ from fastapi import Query
 from items.models import ITEM_TYPES
 from users.schemas import UserGet
 from config import BASE64_PATTERN
+from extra.schemas import Pagination
 
 
 class CreateItem(BaseModel):
@@ -68,3 +69,7 @@ class GetItem(BaseModel):
 class AddItemsToMoodboard(BaseModel):
     items: list[CreateItem] | None = None
     existing_items: list[int] | None = None
+
+
+class PaginatedItem(Pagination):
+    items: list[GetItem]

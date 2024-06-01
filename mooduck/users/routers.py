@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends, HTTPException, status
 import bcrypt
 
-from users.schemas import UserCreate, UserGet
+from users.schemas import UserCreate, UserGet, PaginatedUser
 from users.models import User
 from users.services import (
     subscribe_on_user as subscribe_on_user_db,
@@ -16,7 +16,6 @@ from moodboards.models import Moodboard
 from extra.services import create_instance_by_kwargs, get_instance_or_404
 from extra.utils import get_password_hash, create_access_token
 from extra.dependencies import is_authenticated, pagination
-from extra.schemas import Pagination
 
 
 router = APIRouter()
@@ -50,7 +49,7 @@ async def list_user(
     user: Annotated[User, Depends(is_authenticated)],
     paginator=Depends(pagination),
     search: str | None = None
-) -> Pagination:
+) -> PaginatedUser:
     return await paginator(get_all_users(search), UserGet)
 
 
@@ -104,5 +103,5 @@ async def unsubscribe_from_user(
 async def list_subs(
     user: Annotated[User, Depends(is_authenticated)],
     paginator=Depends(pagination),
-) -> Pagination:
+) -> PaginatedUser:
     return await paginator(get_user_subs(user), UserGet)
