@@ -19,7 +19,7 @@ async def test_add_items_to_chaotic(
     )
     pprint(response.json())
     assert response.status_code == 200
-    assert len(response.json().get('items')) == 1
+    assert len(response.json()) == 1
 
 
 async def test_add_existing_items_to_chaotic(
@@ -35,8 +35,8 @@ async def test_add_existing_items_to_chaotic(
     )
     pprint(response.json())
     assert response.status_code == 200
-    assert len(response.json().get('items')) == 1
-    assert response.json().get('items')[0].get('id') == item.id
+    assert len(response.json()) == 1
+    assert response.json()[0].get('id') == item.id
 
 
 async def test_add_existing_items_to_chaotic_400(
@@ -213,3 +213,75 @@ async def test_random_item(user_client, items):
         third_item.id,
         fourth_item.id
     )
+
+
+async def test_patch_item(author_client, item):
+    response = await author_client.patch(
+        f'/item/{item.id}',
+        json={
+            'name': 'patched'
+        }
+    )
+    assert response.status_code == 200
+    assert response.json().get('name') == 'patched'
+    assert len(response.json().get('media')) == 1
+
+
+async def test_patch_item_media(author_client, item):
+    response = await author_client.patch(
+        f'/item/{item.id}',
+        json={
+            'media': ['data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7']
+        }
+    )
+    assert response.status_code == 200
+    assert len(response.json().get('media')) == 1
+
+
+async def test_patch_item_401(user_client, item):
+    response = await user_client.patch(
+        f'/item/{item.id}',
+        json={
+            'name': 'patched'
+        }
+    )
+    assert response.status_code == 401
+    response = await user_client.get(f'/item/{item.id}')
+    assert response.json().get('name') == item.name
+
+
+async def test_list_item(user_client, items):
+    first_item, second_item, third_item, fourth_item = items
+    response = await user_client.get('/item')
+    pprint(response.json())
+    json: dict = response.json()
+    items = json.get('items')
+    assert response.status_code == 200
+    assert len(items) == 4
+    assert items[0].get('id') == fourth_item.id
+    assert json.get('next_page') is None
+    assert json.get('prev_page') is None
+
+
+async def test_list_items_with_params(user_client, items):
+    first_item, second_item, third_item, fourth_item = items
+    response_limit = await user_client.get('/item?limit=2')
+    response_limit_page = await user_client.get('/item?limit=2&page=2')
+
+    response_limit_json = response_limit.json()
+    response_limit_page_json = response_limit_page.json()
+
+    assert response_limit.status_code == 200
+    assert response_limit_page.status_code == 200
+
+    assert len(response_limit_json.get('items')) == 2
+    assert len(response_limit_page_json.get('items')) == 2
+
+    assert response_limit_json.get('prev_page') is None
+    assert response_limit_page_json.get('prev_page') is not None
+
+    assert response_limit_json.get('next_page') is not None
+    assert response_limit_page_json.get('next_page') is None
+
+    assert response_limit_json.get('items')[0].get('id') == fourth_item.id
+    assert response_limit_page_json.get('items')[0].get('id') == second_item.id
