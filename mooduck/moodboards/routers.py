@@ -15,7 +15,8 @@ from moodboards.schemas import (
     GetMoodboard,
     PatchMoodboard,
     ListMoodboard,
-    PaginatedMoodboard
+    PaginatedMoodboard,
+    GetChaotic
 )
 from moodboards.services import (
     get_moodboard_with_items_and_comments,
@@ -70,7 +71,7 @@ async def create_moodboard(
             moodboard
         )
         items.extend(existing_items)
-    return get_moodboard_response(moodboard, items, [], False)
+    return get_moodboard_response(moodboard, items, [],)
 
 
 @router.get('/moodboard/{moodboard_id}')
@@ -86,7 +87,8 @@ async def retrieve_moodboard(
         moodboard,
         items,
         comments,
-        await user.is_moodboard_liked(moodboard_id)
+        await user.is_moodboard_liked(moodboard_id),
+        await user.is_moodboard_in_fav(moodboard_id)
     )
 
 
@@ -119,7 +121,8 @@ async def patch_moodboard(
         moodboard,
         await get_moodboard_items(moodboard),
         await get_moodboard_comments(moodboard),
-        await user.is_moodboard_liked(moodboard_id)
+        await user.is_moodboard_liked(moodboard_id),
+        await user.is_moodboard_in_fav(moodboard_id)
     )
 
 
@@ -132,7 +135,8 @@ async def retrieve_random_moodboard(
         moodboard,
         await get_moodboard_items(moodboard),
         await get_moodboard_comments(moodboard),
-        await user.is_moodboard_liked(moodboard.id)
+        await user.is_moodboard_liked(moodboard.id),
+        await user.is_moodboard_in_fav(moodboard.id),
     )
 
 
@@ -213,11 +217,10 @@ async def get_subs_moodboards(
 @router.get('/chaotic')
 async def retrive_chaotic(
     user: Annotated[User, Depends(is_authenticated)]
-) -> GetMoodboard:
+) -> GetChaotic:
     moodboard = await get_chaotic(user)
     return get_moodboard_response(
         moodboard,
         await get_moodboard_items(moodboard),
         await get_moodboard_comments(moodboard),
-        False
     )

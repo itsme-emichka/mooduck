@@ -10,7 +10,8 @@ def get_moodboard_response(
     moodboard: Moodboard,
     items: list[Item],
     comments: list[Comment],
-    is_liked: bool = False
+    is_liked: bool = False,
+    is_in_favorite: bool = False
 ) -> GetMoodboard:
     return GetMoodboard(
         id=moodboard.id,
@@ -24,5 +25,6 @@ def get_moodboard_response(
         items=get_item_list_response(items),
         comments=get_comment_list_response(comments),
         likes=moodboard.likes,
-        is_liked=is_liked
+        is_liked=is_liked,
+        is_in_favorite=is_in_favorite
     )

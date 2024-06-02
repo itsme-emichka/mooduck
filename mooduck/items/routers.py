@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 from users.models import User
 from extra.dependencies import is_authenticated, pagination
-from items.models import Item
+from items.models import Item, ITEM_TYPES
 from items.schemas import (
     AddItemsToMoodboard,
     PatchItem,
@@ -28,10 +28,8 @@ from moodboards.services import (
     get_chaotic,
     get_moodboard_check_authorization
 )
-from moodboards.utils import get_moodboard_response
 from moodboards.dependencies import is_moodboard_author
 from moodboards.models import Moodboard
-from reactions.services import get_moodboard_comments
 
 
 router = APIRouter()
@@ -41,7 +39,7 @@ router = APIRouter()
 async def add_items_to_chaotic(
     user: Annotated[User, Depends(is_authenticated)],
     data: AddItemsToMoodboard
-) -> GetMoodboard:
+) -> list[GetItem]:
     moodboard = await get_chaotic(user)
     items = []
     if data.items:
@@ -58,10 +56,8 @@ async def add_items_to_chaotic(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Пустой запрос или такие айтемы уже на мудборде'
         )
-    return get_moodboard_response(
-        moodboard,
+    return get_item_list_response(
         await get_moodboard_items(moodboard),
-        await get_moodboard_comments(moodboard)
     )
 
 
@@ -130,6 +126,11 @@ async def delete_item_from_moodboard(
         item_id=item_id,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get('/item/types')
+async def list_item_types() -> dict[str, str]:
+    return ITEM_TYPES
 
 
 @router.get('/item/{item_id}')

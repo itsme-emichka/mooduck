@@ -39,6 +39,7 @@ class GetMoodboard(BaseModel):
     created_at: datetime
     likes: int = 0
     is_liked: bool = False
+    is_in_favorite: bool = False
     comments: list[GetComment] | None = None
     items: list[GetItem] | None = None
 
@@ -53,7 +54,6 @@ class ListMoodboard(BaseModel):
     is_private: bool
     is_chaotic: bool
     likes: int = 0
-    is_liked: bool = False
 
     class Config:
         from_attributes = True
@@ -61,3 +61,15 @@ class ListMoodboard(BaseModel):
 
 class PaginatedMoodboard(Pagination):
     items: list[ListMoodboard]
+
+
+class GetChaotic(BaseModel):
+    id: int
+    author: UserGet
+    name: str
+    description: str | None = None
+    cover: str | None = None
+    is_private: bool
+    is_chaotic: bool
+    created_at: datetime
+    items: list[GetItem] | None = None

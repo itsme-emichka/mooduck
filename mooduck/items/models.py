@@ -15,14 +15,10 @@ ITEM_TYPES: dict[str, str] = {
     'music': 'Музыка',
     'game': 'Игра',
     'book': 'Книга',
-    'site': 'Сайт'
+    'site': 'Сайт',
+    'location': 'Локация',
+    'other': 'Другое'
 }
-
-MEDIA_TYPES: list[str] = [
-    'image',
-    'gif',
-    'video',
-]
 
 
 class ItemMoodboard(Model):

@@ -74,7 +74,8 @@ async def get_item(item_id: int) -> Item:
 
 
 async def update_item(item: Item, data: dict) -> Item:
-    data['media'] = get_media_from_base64_list(data.get('media', None))
+    if data.get('media', None):
+        data['media'] = get_media_from_base64_list(data.get('media'))
     try:
         item.update_from_dict(data)
         await item.save()

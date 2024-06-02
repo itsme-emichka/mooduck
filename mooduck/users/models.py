@@ -43,6 +43,17 @@ class User(Model):
     async def is_moodboard_liked(self, moodboard_id: int) -> bool:
         return moodboard_id in await self.get_liked_moodboard_ids()
 
+    async def get_favorite_moodboard_ids(self):
+        return await self.all(
+        ).select_related(
+            'fav_moodboard'
+        ).filter(
+            fav_moodboard__user=self
+        ).values_list('fav_moodboard__moodboard_id', flat=True)
+
+    async def is_moodboard_in_fav(self, moodboard_id: int) -> bool:
+        return moodboard_id in await self.get_favorite_moodboard_ids()
+
     def __str__(self) -> str:
         return self.username
 
