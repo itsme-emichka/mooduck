@@ -47,3 +47,8 @@
   - `aerich upgrade`
 - **Запустите проект:**  
   - `uvicorn main:app --reload`
+ 
+### Автор  
+**Имя:** Эмилар Локтев  
+**Почта:** emilar-l@yandex.ru  
+**Telegram:** @itsme_emichka
