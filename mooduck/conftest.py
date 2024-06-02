@@ -4,6 +4,7 @@ from tortoise import Tortoise
 from tests.conftest_utils.users_conf import *
 from tests.conftest_utils.moodboards_conf import *
 from tests.conftest_utils.items_conf import *
+from tests.conftest_utils.reactions_conf import *
 
 
 # SETUP

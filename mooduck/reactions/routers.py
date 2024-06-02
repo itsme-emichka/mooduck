@@ -1,7 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, Response, status
 
 from users.models import User
 from moodboards.services import (
@@ -31,7 +30,7 @@ async def leave_comment_to_moodboard(
     user: Annotated[User, Depends(is_authenticated)],
     moodboard_id: int,
     data: CreateComment
-) -> RedirectResponse:
+) -> list[GetComment]:
     moodboard = await get_moodboard(moodboard_id)
     await add_comment_to_moodboard(
         user=user,
@@ -77,7 +76,7 @@ async def delete_comment(
 ):
     user, comment = user_comment
     await delete_comment_db(comment)
-    return
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post('/moodboard/{moodboard_id}/comment/{comment_id}')
@@ -105,7 +104,7 @@ async def like_moodboard(
     user: Annotated[User, Depends(is_authenticated)],
 ):
     await like_moodboard_db(user, moodboard_id)
-    return
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.delete('/moodboard/{moodboard_id}/like')
@@ -114,4 +113,4 @@ async def dislike_moodboard(
     user: Annotated[User, Depends(is_authenticated)]
 ):
     await dislike_moodboard_db(user, moodboard_id)
-    return
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
