@@ -10,3 +10,40 @@
 По той же логике можно добавлять целые мудборды в избранное, они появятся на странице "избранные мудборды" как ни странно.  
 
 Пользователи могут подписываться друг на друга, посты подписок доступны на соответствующей странице
+
+
+### Стек
+- FastAPI
+- Pydantic
+- PostgreSQL
+- TortoiseORM
+- pytest
+- httpx
+
+
+### Разворачивание проекта
+- **Склонируйте репозиторий:**  
+  - `git clone https://github.com/itsme-emichka/mooduck.git`
+- **Перейдите в скачанную директорию и в главную папку проекта:**  
+  - `cd mooduck`
+  - `cd mooduck`
+- **Создайте окружение и установите зависимости:**  
+  - Mac/Linux
+    - `python3 -m venv venv`
+    - `source venv/bin/activate`
+    - `pip install -r requirements.txt`
+  - Windows  
+    - `python -m venv venv`
+    - `source venv/Scripts/activate`
+    - `pip install -r requirements.txt`
+- **Создайте файл** `.env` **с переменными:**  
+  - POSTGRES_DB
+  - POSTGRES_PASSWORD
+  - POSTGRES_USER
+  - POSTGRES_PORT
+  - POSTGRES_HOST
+- **Создайте соответствующую базу PostgreSQL**
+- **Примените миграции:**  
+  - `aerich upgrade`
+- **Запустите проект:**  
+  - `uvicorn main:app --reload`
