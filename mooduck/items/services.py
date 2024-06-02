@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from tortoise.contrib.postgres.functions import Random
 from tortoise.expressions import Q
 
@@ -7,6 +6,7 @@ from items.schemas import CreateItem
 from items.utils import get_media_from_base64_list
 from items.models import Item, ItemMoodboard, ITEM_TYPES
 from users.models import User
+from extra.exceptions import NotFound, UnAuthorized
 
 
 async def add_existing_items_to_moodboard(
@@ -69,7 +69,7 @@ async def create_item(
 async def get_item(item_id: int) -> Item:
     item = await Item.all().select_related('author').get_or_none(id=item_id)
     if not item:
-        raise HTTPException(404)
+        raise NotFound
     return item
 
 
@@ -107,7 +107,7 @@ async def delete_item_from_moodboard(
     ).values_list('item_id', flat=True)
 
     if item_id not in moodboard_items_ids:
-        raise HTTPException(404)
+        raise NotFound
 
     await ItemMoodboard.filter(
         moodboard=moodboard,
@@ -120,7 +120,7 @@ async def delete_item_from_moodboard(
 async def get_item_check_authorization(user: User, item_id: int) -> Item:
     item: Item = await get_item(item_id)
     if item.is_private and user != item.author:
-        raise HTTPException(401)
+        raise UnAuthorized
     return item
 
 
@@ -137,7 +137,7 @@ async def get_random_item(item_type: str | None = None) -> Item:
         ).first()
 
     if item_type not in ITEM_TYPES.keys():
-        raise HTTPException(404, 'incorrect item type')
+        raise NotFound
 
     return await Item.filter(
         is_private=False
@@ -166,6 +166,6 @@ def get_all_items(
     if not item_type:
         return items
     if item_type not in ITEM_TYPES.keys():
-        raise HTTPException(400, 'incorrect item type')
+        raise NotFound
 
     return items.filter(item_type=item_type)

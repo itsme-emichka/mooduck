@@ -1,7 +1,7 @@
 from typing import Annotated, Callable
 
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, Request, Query
+from fastapi import Depends, Request, Query
 from jose import jwt, JWTError
 from tortoise.queryset import QuerySet
 from tortoise import Model
@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from config import SECRET_KEY, ALGORITHM
 from extra.services import get_instance_or_404, paginate_queryset
 from extra.schemas import Pagination
+from extra.exceptions import UnAuthorized
 from users.models import User
 
 
@@ -21,9 +22,9 @@ async def is_authenticated(token: Annotated[str, Depends(oauth)]) -> User:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get('sub')
         if not username:
-            raise HTTPException(status_code=401)
+            raise UnAuthorized
     except JWTError:
-        raise HTTPException(status_code=401)
+        raise UnAuthorized
     return await get_instance_or_404(User, username=username)
 
 

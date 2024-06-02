@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 import bcrypt
 
 from users.schemas import UserCreate, UserGet, PaginatedUser
@@ -12,6 +12,7 @@ from users.services import (
     delete_user_from_subs,
     get_all_users
 )
+from users.exceptions import WrongLoginOrPassword
 from moodboards.models import Moodboard
 from extra.services import create_instance_by_kwargs, get_instance_or_404
 from extra.utils import get_password_hash, create_access_token
@@ -59,10 +60,7 @@ async def auth_user(
 ) -> str:
     user: User = await get_instance_or_404(User, username=user_data.username)
     if not bcrypt.checkpw(user_data.password.encode(), user.password.encode()):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Неверный логин или пароль'
-        )
+        raise WrongLoginOrPassword
     token = create_access_token(
         data={'sub': user_data.username}
     )

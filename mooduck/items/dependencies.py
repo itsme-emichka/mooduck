@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from users.models import User
 from items.models import Item
 from items.services import get_item
 from extra.dependencies import is_authenticated
+from extra.exceptions import UnAuthorized
 
 
 async def is_item_author(
@@ -14,8 +15,5 @@ async def is_item_author(
 ) -> tuple[User, Item]:
     item = await get_item(item_id)
     if not item.author == user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='У вас недостаточно прав для доступа к данной записи'
-        )
+        raise UnAuthorized
     return user, item

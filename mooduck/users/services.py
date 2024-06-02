@@ -1,9 +1,9 @@
-from fastapi import HTTPException
 from tortoise.expressions import Q
 from tortoise.queryset import QuerySet
 
 from users.models import User, Subscription
 from extra.services import get_instance_or_404
+from extra.exceptions import AlreadyExists
 
 
 async def subscribe_on_user(user: User, sub_for_id: int) -> User:
@@ -13,7 +13,7 @@ async def subscribe_on_user(user: User, sub_for_id: int) -> User:
         subscribed_for=sub_for
     )
     if not is_created:
-        raise HTTPException(400, 'already subscribed')
+        raise AlreadyExists
     return sub_for
 
 

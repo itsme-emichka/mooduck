@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from moodboards.models import Moodboard
 from moodboards.services import get_moodboard
 from users.models import User
 from extra.dependencies import is_authenticated
+from extra.exceptions import UnAuthorized
 
 
 async def is_moodboard_author(
@@ -14,8 +15,5 @@ async def is_moodboard_author(
 ) -> tuple[User, Moodboard] | None:
     moodboard = await get_moodboard(moodboard_id)
     if not moodboard.author == user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='У вас недостаточно прав для доступа к данной записи'
-        )
+        raise UnAuthorized
     return user, moodboard

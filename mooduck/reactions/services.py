@@ -1,10 +1,10 @@
-from fastapi import HTTPException
 from tortoise.exceptions import IntegrityError
 
 from reactions.models import Comment, Like
 from moodboards.models import Moodboard
 from users.models import User
 from extra.services import get_instance_or_404
+from extra.exceptions import NotFound, BadRequest, AlreadyExists
 
 
 async def get_moodboard_comments(moodboard: Moodboard) -> list[Comment]:
@@ -26,7 +26,7 @@ async def get_comment(id: int) -> Comment:
         'answering_to'
     ).get_or_none(id=id)
     if not comment:
-        raise HTTPException(404)
+        raise NotFound
     return comment
 
 
@@ -45,7 +45,7 @@ async def add_comment_to_moodboard(
         )
     except IntegrityError as ex:
         print(ex)
-        raise HTTPException(400, 'wrong data')
+        raise BadRequest
     return moodboard
 
 
@@ -56,7 +56,7 @@ async def update_comment(comment: Comment, text: str) -> Comment:
         return comment
     except IntegrityError as ex:
         print(ex)
-        raise HTTPException(400)
+        raise BadRequest
 
 
 async def delete_comment(comment: Comment) -> None:
@@ -71,7 +71,7 @@ async def like_moodboard(user: User, moodboard_id: int):
     like, is_created = await Like.get_or_create(
         author=user, moodboard=moodboard)
     if not is_created:
-        raise HTTPException(400, 'already exists')
+        raise AlreadyExists
     await moodboard.add_like()
 
 
@@ -82,6 +82,6 @@ async def dislike_moodboard(user: User, moodboard_id: int):
     )
     like = await Like.get_or_none(author=user, moodboard=moodboard)
     if not like:
-        raise HTTPException(404)
+        raise NotFound
     await moodboard.remove_like()
     await like.delete()

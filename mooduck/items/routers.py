@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, status, Response
 
 from users.models import User
 from extra.dependencies import is_authenticated, pagination
@@ -23,6 +23,7 @@ from items.services import (
 )
 from items.dependencies import is_item_author
 from items.utils import get_item_response, get_item_list_response
+from items.exceptions import ItemError
 from moodboards.schemas import GetMoodboard
 from moodboards.services import (
     get_chaotic,
@@ -52,10 +53,7 @@ async def add_items_to_chaotic(
             )
         )
     if not items:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Пустой запрос или такие айтемы уже на мудборде'
-        )
+        raise ItemError
     return get_item_list_response(
         await get_moodboard_items(moodboard),
     )
@@ -95,10 +93,7 @@ async def add_items_to_moodboard(
             )
         )
     if not items:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Пустой запрос или такие айтемы уже на мудборде'
-        )
+        raise ItemError
     return get_item_list_response(items)
 
 
